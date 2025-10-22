@@ -10,12 +10,15 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS } from '../utils/constants';
 import { MeterCard } from '../components/MeterCard';
 import { getUserMeters, deleteMeter } from '../services/meterService';
 import { getCurrentUser } from '../services/authService';
+import { useDarkMode } from '../utils/darkModeContext';
 
 export const HomeScreen = ({ navigation }) => {
+  const { colors } = useDarkMode(); // <<--- usar paleta dinámica del contexto
+  const styles = createStyles(colors);
+
   const [meters, setMeters] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +73,7 @@ export const HomeScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+          <ActivityIndicator size="large" color={colors.PRIMARY} />
         </View>
       </SafeAreaView>
     );
@@ -124,80 +127,82 @@ export const HomeScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 40,
-    backgroundColor: COLORS.WHITE,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BACKGROUND,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.PRIMARY,
-  },
-  addButton: {
-    backgroundColor: COLORS.PRIMARY,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  addButtonText: {
-    color: COLORS.WHITE,
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 20,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  emptyEmoji: {
-    fontSize: 60,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.TEXT_DARK,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: COLORS.TEXT_LIGHT,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  emptyButton: {
-    backgroundColor: COLORS.PRIMARY,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  emptyButtonText: {
-    color: COLORS.WHITE,
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-});
+// ---- estilos dependientes del tema (contexto) ----
+const createStyles = (colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.BACKGROUND,
+    },
+    centerContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 40,
+      backgroundColor: colors.CARD,     // antes: COLORS.WHITE
+      borderBottomWidth: 1,
+      borderBottomColor: colors.BORDER, // antes: COLORS.BACKGROUND
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.PRIMARY, // mantiene tu acento
+    },
+    addButton: {
+      backgroundColor: colors.PRIMARY,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 20,
+    },
+    addButtonText: {
+      color: colors.WHITE,   // ya definido en el contexto
+      fontWeight: 'bold',
+      fontSize: 14,
+    },
+    list: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      paddingBottom: 20,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 32,
+    },
+    emptyEmoji: {
+      fontSize: 60,
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.TEXT_DARK, // dependiente del tema
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: colors.TEXT_LIGHT, // dependiente del tema
+      textAlign: 'center',
+      marginBottom: 24,
+      lineHeight: 20,
+    },
+    emptyButton: {
+      backgroundColor: colors.PRIMARY,
+      paddingHorizontal: 32,
+      paddingVertical: 12,
+      borderRadius: 20,
+    },
+    emptyButtonText: {
+      color: colors.WHITE,
+      fontWeight: 'bold',
+      fontSize: 14,
+    },
+  });

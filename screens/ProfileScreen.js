@@ -19,6 +19,7 @@ import moment from 'moment';
 
 export const ProfileScreen = ({ navigation }) => {
   const { colors, isDarkMode, toggleDarkMode } = useDarkMode();
+  
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [savingsData, setSavingsData] = useState(null);

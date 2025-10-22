@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,11 @@ import {
   ActivityIndicator,
   ScrollView,
   SafeAreaView,
+  Alert,
+  Keyboard,
 } from 'react-native';
 import { useDarkMode } from '../utils/darkModeContext';
 import { showToast } from '../utils/toastUtils';
-import { CONFIG } from '../utils/constants';
 import { addReading, updateMeter, getUserMeters } from '../services/meterService';
 import { getCurrentUser } from '../services/authService';
 import { calculateConsumption, calculateCost, formatCurrency } from '../utils/calculations';
@@ -20,86 +21,104 @@ import moment from 'moment';
 export const NewReadingScreen = ({ route, navigation }) => {
   const { meterId } = route.params;
   const { colors } = useDarkMode();
+
   const [readingValue, setReadingValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [meterData, setMeterData] = useState(null);
 
-  React.useEffect(() => {
+  // --- Util: toast seguro (si no hay Toast montado, usa Alert) ---
+  const safeToast = useCallback((message, type = 'info') => {
+    try {
+      showToast(message, type);
+    } catch {
+      const title =
+        type === 'error' ? 'Error' : type === 'warning' ? 'Atención' : 'Información';
+      Alert.alert(title, message);
+    }
+  }, []);
+
+  useEffect(() => {
     loadMeterData();
   }, []);
 
-  const loadMeterData = async () => {
+  const loadMeterData = useCallback(async () => {
     try {
       const user = getCurrentUser();
+      if (!user?.uid) return;
       const userMeters = await getUserMeters(user.uid);
-      const meter = userMeters.find(m => m.id === meterId);
-      setMeterData(meter);
+      const meter = userMeters.find((m) => m.id === meterId);
+      setMeterData(meter || null);
     } catch (error) {
       console.log('Error loading meter data:', error);
+      safeToast('No se pudo cargar el medidor', 'error');
     }
-  };
+  }, [meterId, safeToast]);
 
-  const validateReading = (value) => {
-    if (!value.trim()) {
-      showToast('Por favor ingresa la lectura', 'error');
-      return false;
-    }
+  const validateReading = useCallback(
+    (value) => {
+      const raw = (value || '').toString().trim();
+      if (!raw) {
+        safeToast('Por favor ingresa la lectura', 'error');
+        return false;
+      }
 
-    if (isNaN(value)) {
-      showToast('La lectura debe ser un número válido', 'error');
-      return false;
-    }
+      // Acepta coma decimal
+      const parsed = parseFloat(raw.replace(',', '.'));
+      if (!Number.isFinite(parsed)) {
+        safeToast('La lectura debe ser un número válido', 'error');
+        return false;
+      }
 
-    const reading = parseFloat(value);
+      if (parsed <= 0) {
+        safeToast('La lectura debe ser mayor a 0', 'error');
+        return false;
+      }
 
-    if (reading <= 0) {
-      showToast('La lectura debe ser mayor a 0', 'error');
-      return false;
-    }
+      if (!meterData) {
+        safeToast('Medidor no disponible aún', 'warning');
+        return false;
+      }
 
-    if (meterData && reading <= meterData.lastReading) {
-      showToast(
-        `La lectura debe ser mayor a ${meterData.lastReading} kWh (lectura anterior)`,
-        'error'
-      );
-      return false;
-    }
+      if (parsed <= meterData.lastReading) {
+        safeToast(
+          `La lectura debe ser mayor a ${meterData.lastReading} kWh (lectura anterior)`,
+          'error'
+        );
+        return false;
+      }
 
-    if (reading > meterData.lastReading + 5000) {
-      showToast('La lectura parece demasiado alta. ¿Estás seguro?', 'warning');
-      return false;
-    }
+      if (parsed > meterData.lastReading + 5000) {
+        safeToast('La lectura parece demasiado alta. ¿Estás seguro?', 'warning');
+        return false;
+      }
 
-    return true;
-  };
+      return true;
+    },
+    [meterData, safeToast]
+  );
 
-  const handleAddReading = async () => {
-    if (!validateReading(readingValue)) {
-      return;
-    }
+  const handleAddReading = useCallback(async () => {
+    if (!validateReading(readingValue) || !meterData) return;
 
+    // cierra teclado para mejor UX
+    Keyboard.dismiss();
     setLoading(true);
 
     try {
       const user = getCurrentUser();
-      const userMeters = await getUserMeters(user.uid);
-      const meter = userMeters.find(m => m.id === meterId);
+      if (!user?.uid) throw new Error('Usuario no autenticado');
 
-      if (!meter) {
-        showToast('Medidor no encontrado', 'error');
-        return;
-      }
-
-      const currentReading = parseFloat(readingValue);
-      const consumption = calculateConsumption(meter.lastReading, currentReading);
-      const cost = calculateCost(consumption, meter.costPerKwh);
+      const currentReading = parseFloat(readingValue.replace(',', '.'));
+      const consumption = calculateConsumption(meterData.lastReading, currentReading);
+      const costPerKwh = Number(meterData.costPerKwh || 0);
+      const cost = calculateCost(consumption, costPerKwh);
 
       const readingData = {
         value: currentReading,
         consumption,
         cost,
-        costPerKwh: meter.costPerKwh,
+        costPerKwh,
       };
 
       await addReading(user.uid, meterId, readingData);
@@ -108,47 +127,37 @@ export const NewReadingScreen = ({ route, navigation }) => {
         lastCost: cost,
       });
 
-      showToast('Lectura registrada correctamente', 'success');
-      navigation.goBack();
+      // feedback + volver atrás
+      safeToast('Lectura registrada correctamente', 'success');
+      setTimeout(() => navigation.goBack(), 250);
     } catch (error) {
-      showToast(`Error: ${error.message}`, 'error');
       console.log('Error adding reading:', error);
+      safeToast(`Error: ${error?.message || 'No se pudo guardar'}`, 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [validateReading, readingValue, meterData, meterId, navigation, safeToast]);
 
-  const handlePreview = async () => {
-    if (!validateReading(readingValue)) {
-      return;
-    }
+  const handlePreview = useCallback(() => {
+    if (!validateReading(readingValue) || !meterData) return;
 
-    try {
-      const user = getCurrentUser();
-      const userMeters = await getUserMeters(user.uid);
-      const meter = userMeters.find(m => m.id === meterId);
+    const currentReading = parseFloat(readingValue.replace(',', '.'));
+    const consumption = calculateConsumption(meterData.lastReading, currentReading);
+    const costPerKwh = Number(meterData.costPerKwh || 0);
+    const cost = calculateCost(consumption, costPerKwh);
 
-      if (!meter) return;
-
-      const currentReading = parseFloat(readingValue);
-      const consumption = calculateConsumption(meter.lastReading, currentReading);
-      const cost = calculateCost(consumption, meter.costPerKwh);
-
-      setPreview({
-        lastReading: meter.lastReading,
-        currentReading,
-        consumption,
-        cost,
-        costPerKwh: meter.costPerKwh,
-      });
-    } catch (error) {
-      console.log('Error generating preview:', error);
-    }
-  };
+    setPreview({
+      lastReading: meterData.lastReading,
+      currentReading,
+      consumption,
+      cost,
+      costPerKwh,
+    });
+  }, [validateReading, readingValue, meterData]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.BACKGROUND }]}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.PRIMARY }]}>Nueva Lectura</Text>
@@ -158,7 +167,15 @@ export const NewReadingScreen = ({ route, navigation }) => {
           </View>
 
           {meterData && (
-            <View style={[styles.infoBox, { backgroundColor: colors.WHITE }]}>
+            <View
+              style={[
+                styles.infoBox,
+                {
+                  backgroundColor: colors.CARD,
+                  borderColor: colors.BORDER,
+                },
+              ]}
+            >
               <Text style={[styles.infoLabel, { color: colors.TEXT_LIGHT }]}>
                 Última lectura registrada:
               </Text>
@@ -169,9 +186,7 @@ export const NewReadingScreen = ({ route, navigation }) => {
           )}
 
           <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.TEXT_DARK }]}>
-              Lectura actual (kWh)
-            </Text>
+            <Text style={[styles.label, { color: colors.TEXT_DARK }]}>Lectura actual (kWh)</Text>
             <TextInput
               style={[
                 styles.input,
@@ -187,6 +202,8 @@ export const NewReadingScreen = ({ route, navigation }) => {
               onChangeText={setReadingValue}
               keyboardType="decimal-pad"
               editable={!loading}
+              returnKeyType="done"
+              onSubmitEditing={handlePreview}
             />
             <Text style={[styles.hint, { color: colors.TEXT_LIGHT }]}>
               Lectura tomada: {moment().format('DD/MM/YYYY HH:mm')}
@@ -194,7 +211,15 @@ export const NewReadingScreen = ({ route, navigation }) => {
           </View>
 
           {preview && (
-            <View style={[styles.previewContainer, { backgroundColor: colors.WHITE }]}>
+            <View
+              style={[
+                styles.previewContainer,
+                {
+                  backgroundColor: colors.CARD,
+                  borderColor: colors.PRIMARY,
+                },
+              ]}
+            >
               <Text style={[styles.previewTitle, { color: colors.PRIMARY }]}>
                 📊 Vista Previa del Cálculo
               </Text>
@@ -217,21 +242,17 @@ export const NewReadingScreen = ({ route, navigation }) => {
                 </Text>
               </View>
 
-              <View style={[styles.divider, { borderColor: colors.BACKGROUND }]} />
+              <View style={[styles.divider, { borderColor: colors.BORDER }]} />
 
               <View style={styles.previewRow}>
-                <Text style={[styles.previewLabel, { color: colors.TEXT_LIGHT }]}>
-                  Consumo:
-                </Text>
+                <Text style={[styles.previewLabel, { color: colors.TEXT_LIGHT }]}>Consumo:</Text>
                 <Text style={[styles.previewValue, { color: colors.ACCENT, fontWeight: 'bold' }]}>
                   {preview.consumption} kWh
                 </Text>
               </View>
 
               <View style={styles.previewRow}>
-                <Text style={[styles.previewLabel, { color: colors.TEXT_LIGHT }]}>
-                  Tarifa:
-                </Text>
+                <Text style={[styles.previewLabel, { color: colors.TEXT_LIGHT }]}>Tarifa:</Text>
                 <Text style={[styles.previewValue, { color: colors.TEXT_DARK }]}>
                   ${preview.costPerKwh}/kWh
                 </Text>
@@ -255,26 +276,30 @@ export const NewReadingScreen = ({ route, navigation }) => {
 
           <View style={styles.buttons}>
             <TouchableOpacity
-              style={[styles.previewButton, { backgroundColor: colors.SECONDARY }]}
+              style={[styles.previewButton, { backgroundColor: colors.ACCENT }]}
               onPress={handlePreview}
-              disabled={loading}
+              disabled={loading || !meterData}
+              activeOpacity={0.85}
             >
-              <Text style={styles.previewButtonText}>👁️ Ver cálculo</Text>
+              {loading ? (
+                <ActivityIndicator color={colors.WHITE} />
+              ) : (
+                <Text style={[styles.previewButtonText, { color: colors.WHITE }]}>
+                  👁️ Ver cálculo
+                </Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.saveButton,
-                { backgroundColor: colors.PRIMARY },
-                loading && styles.buttonDisabled,
-              ]}
+              style={[styles.saveButton, { backgroundColor: colors.PRIMARY }, loading && styles.buttonDisabled]}
               onPress={handleAddReading}
-              disabled={loading}
+              disabled={loading || !meterData}
+              activeOpacity={0.85}
             >
               {loading ? (
-                <ActivityIndicator color="white" />
+                <ActivityIndicator color={colors.WHITE} />
               ) : (
-                <Text style={styles.saveButtonText}>✓ Guardar lectura</Text>
+                <Text style={[styles.saveButtonText, { color: colors.WHITE }]}>✓ Guardar lectura</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -283,10 +308,9 @@ export const NewReadingScreen = ({ route, navigation }) => {
             style={[styles.cancelButton, { borderColor: colors.PRIMARY }]}
             onPress={() => navigation.goBack()}
             disabled={loading}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.cancelButtonText, { color: colors.PRIMARY }]}>
-              Cancelar
-            </Text>
+            <Text style={[styles.cancelButtonText, { color: colors.PRIMARY }]}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -295,49 +319,25 @@ export const NewReadingScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-  },
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  content: { padding: 16 },
+
+  header: { marginBottom: 24 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 8 },
+  subtitle: { fontSize: 14 },
+
   infoBox: {
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftWidth: 4, // color dinámico por prop (borderColor)
   },
-  infoLabel: {
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  infoValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
+  infoLabel: { fontSize: 12, marginBottom: 6 },
+  infoValue: { fontSize: 18, fontWeight: 'bold' },
+
+  section: { marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   input: {
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -347,76 +347,30 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontWeight: 'bold',
   },
-  hint: {
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
+  hint: { fontSize: 12, fontStyle: 'italic' },
+
   previewContainer: {
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#10B981',
+    borderLeftWidth: 4, // color dinámico por prop (borderColor)
   },
-  previewTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  previewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  divider: {
-    borderBottomWidth: 1,
-    marginVertical: 8,
-  },
-  previewLabel: {
-    fontSize: 13,
-  },
-  previewValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  previewButton: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  previewButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
+  previewTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 12 },
+  previewRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
+  divider: { borderBottomWidth: 1, marginVertical: 8 },
+  previewLabel: { fontSize: 13 },
+  previewValue: { fontSize: 14, fontWeight: '600' },
+
+  buttons: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+
+  previewButton: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  previewButtonText: { fontSize: 14, fontWeight: 'bold' },
+
+  saveButton: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  saveButtonText: { fontSize: 14, fontWeight: 'bold' },
+
+  cancelButton: { borderWidth: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  cancelButtonText: { fontSize: 14, fontWeight: 'bold' },
+
+  buttonDisabled: { opacity: 0.7 },
 });
