@@ -2,15 +2,18 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
   query,
   where,
   orderBy,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+import { deleteMeterPhoto } from './imageService';
 
 /**
  * Crear nuevo medidor para un usuario
@@ -115,24 +118,68 @@ export const getMeterReadings = async (userId, meterId) => {
   }
 };
 
+
+/**
+ * Elimina una lectura específica de un medidor
+ * También elimina la foto asociada si existe
+ */
+export const deleteReading = async (userId, meterId, readingId) => {
+  try {
+    // 1. Obtener la lectura para ver si tiene foto
+    const readingRef = doc(db, 'users', userId, 'meters', meterId, 'readings', readingId);
+    const readingSnap = await getDoc(readingRef);
+
+    if (readingSnap.exists()) {
+      const readingData = readingSnap.data();
+
+      // 2. Si tiene foto, eliminarla de Storage primero
+      if (readingData.photoURL) {
+        try {
+          await deleteMeterPhoto(readingData.photoURL);
+        } catch (photoError) {
+          console.error('Error deleting photo, continuing with reading deletion:', photoError);
+          // Continuar aunque falle eliminación de foto
+        }
+      }
+    }
+
+    // 3. Eliminar documento de lectura
+    await deleteDoc(readingRef);
+  } catch (error) {
+    console.error('Error deleting reading:', error);
+    throw error;
+  }
+};
+
+/**
+ * Actualizar una lectura específica de un medidor
+ */
+export const updateReading = async (userId, meterId, readingId, updatedData) => {
+  try {
+    const readingRef = doc(db, 'users', userId, 'meters', meterId, 'readings', readingId);
+    await updateDoc(readingRef, {
+      ...updatedData,
+      // No actualizamos la fecha original para mantener el historial preciso
+    });
+  } catch (error) {
+    console.error('Error updating reading:', error);
+    throw error;
+  }
+};
+
 /**
  * Crear usuario en Firestore con info básica
  */
 export const createUserProfile = async (userId, userEmail) => {
   try {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    // Usar setDoc con merge para crear o actualizar
+    await setDoc(userRef, {
       email: userEmail,
       createdAt: Timestamp.now(),
-    }).catch(() => {
-      // Si el doc no existe, crearlo
-      return addDoc(collection(db, 'users'), {
-        uid: userId,
-        email: userEmail,
-        createdAt: Timestamp.now(),
-      });
-    });
+    }, { merge: true });
   } catch (error) {
-    console.log('User profile creation:', error);
+    console.error('User profile creation error:', error);
+    throw error;
   }
 };

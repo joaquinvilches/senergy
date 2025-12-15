@@ -1,0 +1,79 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "readings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "meterId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "readings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "meters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "readings",
+      "fieldPath": "date",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION" }
+      ]
+    },
+    {
+      "collectionGroup": "meters",
+      "fieldPath": "lastReading",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION" }
+      ]
+    }
+  ]
+}

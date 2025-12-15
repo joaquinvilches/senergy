@@ -6,16 +6,20 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-"splash": {
-  "resizeMode": "contain",
-  "backgroundColor": "#F5F9F7"
-},
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F9F7"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTabletMode": true,
-      "bundleIdentifier": "com.energysaver.senergy"
+      "supportsTablet": true,
+      "bundleIdentifier": "com.energysaver.senergy",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SENERGY necesita acceso a tu cámara para tomar fotos del medidor eléctrico y llevar un registro visual de tus lecturas.",
+        "NSPhotoLibraryUsageDescription": "SENERGY necesita acceso a tus fotos para guardar las imágenes del medidor."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +29,8 @@
       "package": "com.energysaver.senergy",
       "permissions": [
         "CAMERA",
-        "READ_EXTERNAL_STORAGE"
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -33,9 +38,11 @@
     },
     "plugins": [
       [
-        "expo-camera",
+        "expo-notifications",
         {
-          "cameraPermission": "Allow SENERGY to access your camera."
+          "icon": "./assets/icon.png",
+          "color": "#10B981",
+          "sounds": []
         }
       ]
     ]

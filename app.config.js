@@ -1,0 +1,52 @@
+import 'dotenv/config';
+
+export default {
+  expo: {
+    name: 'SENERGY',
+    slug: 'senergy',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/icon.png',
+    userInterfaceStyle: 'light',
+    extra: {
+      cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      cloudinaryUploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET,
+    },
+    splash: {
+      resizeMode: 'contain',
+      backgroundColor: '#F5F9F7',
+    },
+    assetBundlePatterns: ['**/*'],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: 'com.energysaver.senergy',
+      infoPlist: {
+        NSCameraUsageDescription:
+          'SENERGY necesita acceso a tu cámara para tomar fotos del medidor eléctrico y llevar un registro visual de tus lecturas.',
+        NSPhotoLibraryUsageDescription:
+          'SENERGY necesita acceso a tus fotos para guardar las imágenes del medidor.',
+      },
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: './assets/adaptive-icon.png',
+        backgroundColor: '#1B7D4A',
+      },
+      package: 'com.energysaver.senergy',
+      permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'],
+    },
+    web: {
+      favicon: './assets/favicon.png',
+    },
+    plugins: [
+      [
+        'expo-notifications',
+        {
+          icon: './assets/icon.png',
+          color: '#10B981',
+          sounds: [],
+        },
+      ],
+    ],
+  },
+};

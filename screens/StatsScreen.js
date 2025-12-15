@@ -1,71 +1,183 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Alert,
-  SafeAreaView,
   TouchableOpacity,
-  Animated,
-  Dimensions,
+  Alert,
 } from 'react-native';
-import { LineChart, PieChart, BarChart, ProgressChart } from 'react-native-chart-kit';
-import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDarkMode } from '../utils/darkModeContext';
-import { CONFIG } from '../utils/constants';
-import { getUserMeters, getMeterReadings } from '../services/meterService';
-import { getCurrentUser } from '../services/authService';
-import { formatCurrency } from '../utils/calculations';
-import moment from 'moment';
+import { formatKWh, formatCLP } from '../utils/formatHelpers';
+import { exportStatsToCSV } from '../services/exportService';
+import { showToast } from '../utils/toastUtils';
+import { SPACING, TYPOGRAPHY } from '../constants/theme';
+import Icon from '../components/Icon';
+import { Animated } from 'react-native';
+import { useSubscription } from '../hooks/useSubscription';
+import { Paywall } from '../components/Paywall';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CHART_WIDTH = SCREEN_WIDTH - 32;
-const hexToRgba = (hex, opacity = 1) => {
-  const h = hex.replace('#', '');
-  const bigint = parseInt(h, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-};
+// Hooks personalizados
+import { useStatsData } from '../hooks/useStatsData';
+import { usePeriodFilter } from '../hooks/usePeriodFilter';
+import { useInsights } from '../hooks/useInsights';
 
-const toJSDate = (d) => (d?.toDate ? d.toDate() : new Date(d));
-const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-const COLORS_FALLBACK = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'];
-const getRandomColor = () => COLORS_FALLBACK[Math.floor(Math.random() * COLORS_FALLBACK.length)];
+// Componentes nuevos del rediseño
+import { PeriodSelector } from '../components/stats/PeriodSelector';
+import { UnitTogglePro } from '../components/stats/UnitTogglePro';
+import { MeterFilterChips } from '../components/stats/MeterFilterChips';
+import { HeroStatCard } from '../components/stats/HeroStatCard';
+import { InsightsCard } from '../components/stats/InsightsCard';
+import { ChartsTabView } from '../components/stats/ChartsTabView';
+import { DetailedStatsAccordion } from '../components/stats/DetailedStatsAccordion';
+import { QuickStatsRow } from '../components/stats/QuickStatsRow';
+import { EmptyState } from '../components/stats/EmptyState';
 
-// === Agregados de UX ===
-const MONTHLY_BUDGET_CLP = Number(CONFIG?.MONTHLY_BUDGET_CLP ?? 30000); // Presupuesto referencial para ProgressChart
+// Utilidades
+import { calculateFullStats, groupReadingsByMeter } from '../utils/statsHelpers';
+
+const PREFS_KEY = '@stats_preferences';
 
 export const StatsScreen = () => {
-  const { colors } = useDarkMode();
+  const { colors, isDark } = useDarkMode();
+  const navigation = useNavigation();
+  const { checkCanExport } = useSubscription();
 
-  // Datos base
-  const [meters, setMeters] = useState([]);
-  const [allReadings, setAllReadings] = useState([]); // cache global
-  const [selectedPeriod, setSelectedPeriod] = useState('month'); // 'week' | 'month' | 'year'
-  const [selectedMeter, setSelectedMeter] = useState('all');     // 'all' | meterId
-  const [unit, setUnit] = useState('kWh'); // 'kWh' | '$'
+  // Estados
+  const [selectedPeriod, setSelectedPeriod] = useState('thisMonth');
+  const [selectedMeter, setSelectedMeter] = useState('all');
+  const [unit, setUnit] = useState('$'); // Empezar con $ (dinero) por defecto
+  const [isExporting, setIsExporting] = useState(false);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
-  // UI state
-  const [loading, setLoading] = useState(true);        // primera carga
-  const [isFetching, setIsFetching] = useState(false); // cambios de período/medidor
-  const [alerts, setAlerts] = useState([]);
+  // Datos de medidores y lecturas
+  const { meters, allReadings, loading, isFetching } = useStatsData();
 
-  // Derivados puntuales
-  const [pieChartData, setPieChartData] = useState([]);
+  // Cargar preferencias guardadas al montar el componente
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const savedPrefs = await AsyncStorage.getItem(PREFS_KEY);
+        if (savedPrefs) {
+          const prefs = JSON.parse(savedPrefs);
+          if (prefs.period) setSelectedPeriod(prefs.period);
+          if (prefs.unit) setUnit(prefs.unit);
+          // No restaurar selectedMeter automáticamente para evitar confusión
+        }
+      } catch (error) {
+        console.error('Error al cargar preferencias:', error);
+      } finally {
+        setPrefsLoaded(true);
+      }
+    };
 
-  // KPIs
-  const [totalStats, setTotalStats] = useState({
-    totalConsumption: 0,
-    totalCost: 0,
-    averageConsumption: 0,
-    trend: 0,
-  });
+    loadPreferences();
+  }, []);
 
-  // Animación
+  // Guardar preferencias cuando cambian
+  useEffect(() => {
+    if (!prefsLoaded) return; // No guardar hasta que se hayan cargado las preferencias iniciales
+
+    const savePreferences = async () => {
+      try {
+        const prefs = {
+          period: selectedPeriod,
+          unit: unit,
+        };
+        await AsyncStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+      } catch (error) {
+        console.error('Error al guardar preferencias:', error);
+      }
+    };
+
+    savePreferences();
+  }, [selectedPeriod, unit, prefsLoaded]);
+
+  // Filtrar lecturas por medidor con memoización optimizada
+  const meterFilteredReadings = useMemo(() => {
+    if (!allReadings || allReadings.length === 0) return [];
+    if (selectedMeter === 'all') return allReadings;
+    return allReadings.filter(r => r.meterId === selectedMeter);
+  }, [allReadings, selectedMeter]);
+
+  // Usar hook de filtro de período
+  const {
+    currentPeriodReadings,
+    previousPeriodReadings,
+    periodLabel,
+    dateRangeLabel,
+    daysInPeriod,
+    comparison,
+    hasCurrentData,
+  } = usePeriodFilter(meterFilteredReadings, selectedPeriod);
+
+  // Calcular estadísticas completas
+  const stats = useMemo(() => {
+    if (!currentPeriodReadings || currentPeriodReadings.length === 0) {
+      return {
+        totalConsumption: 0,
+        totalCost: 0,
+        averageConsumption: 0,
+        averageCost: 0,
+        peakConsumption: 0,
+        minConsumption: 0,
+        count: 0,
+        trend: 'neutral',
+        avgDaysBetweenReadings: 0,
+      };
+    }
+    return calculateFullStats(currentPeriodReadings);
+  }, [currentPeriodReadings]);
+
+  // Generar insights inteligentes
+  const insights = useInsights(
+    currentPeriodReadings,
+    comparison,
+    null, // monthlyBudget - podría agregarse más adelante
+    daysInPeriod
+  );
+
+  // Datos para gráfico de torta (distribución por medidor)
+  const pieData = useMemo(() => {
+    if (selectedMeter !== 'all' || !currentPeriodReadings || currentPeriodReadings.length === 0) {
+      return [];
+    }
+
+    const byMeter = groupReadingsByMeter(currentPeriodReadings);
+    const total = Object.values(byMeter).reduce((sum, readings) => {
+      const value = readings.reduce((s, r) => s + (unit === 'kWh' ? r.consumption : r.cost), 0);
+      return sum + value;
+    }, 0);
+
+    if (total === 0) return [];
+
+    return Object.entries(byMeter).map(([name, readings]) => {
+      const value = readings.reduce((sum, r) => sum + (unit === 'kWh' ? r.consumption : r.cost), 0);
+      return {
+        name,
+        value,
+        percentage: ((value / total) * 100).toFixed(1),
+      };
+    });
+  }, [currentPeriodReadings, selectedMeter, unit]);
+
+  // Contar lecturas por medidor para los badges
+  const readingsCounts = useMemo(() => {
+    if (!currentPeriodReadings || currentPeriodReadings.length === 0) return {};
+    const counts = {};
+    currentPeriodReadings.forEach(reading => {
+      const meterId = reading.meterId;
+      counts[meterId] = (counts[meterId] || 0) + 1;
+    });
+    return counts;
+  }, [currentPeriodReadings]);
+
+  // Animación de entrada
   const animatedValue = useRef(new Animated.Value(0)).current;
   const animateEntry = useCallback(() => {
     animatedValue.setValue(0);
@@ -77,905 +189,381 @@ export const StatsScreen = () => {
     }).start();
   }, [animatedValue]);
 
-  const initialLoadRef = useRef(true);
-
-  // =========================
-  // 1) Carga inicial (UID, medidores y lecturas)
-  // =========================
-  const fetchAll = useCallback(async () => {
-    try {
-      if (initialLoadRef.current) setLoading(true);
-
-      const user = getCurrentUser?.();
-      if (!user?.uid) {
-        if (initialLoadRef.current) setLoading(false);
-        return;
-      }
-
-      const userMeters = await getUserMeters(user.uid);
-      setMeters(userMeters);
-
-      const byMeter = await Promise.all(
-        userMeters.map(async (m) => {
-          const readings = await getMeterReadings(user.uid, m.id);
-          return readings.map((r) => ({
-            ...r,
-            meterId: m.id,
-            meterName: m.name,
-            meterColor: m.color || getRandomColor(),
-          }));
-        })
-      );
-      const merged = byMeter.flat();
-      setAllReadings(merged);
-    } catch (e) {
-      console.log('Error loading stats:', e);
-      Alert.alert('Error', 'No se pudieron cargar las estadísticas');
-    } finally {
-      setLoading(false);
-      initialLoadRef.current = false;
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  // =========================
-  // 2) Filtrado y proyección (en memoria)
-  // =========================
-  const filteredReadings = useMemo(() => {
-    if (!initialLoadRef.current) setIsFetching(true);
-
-    let base = selectedMeter === 'all'
-      ? allReadings
-      : allReadings.filter((r) => r.meterId === selectedMeter);
-
-    const now = moment();
-    const inRange = (days) => (r) => moment(toJSDate(r.date)).isAfter(now.clone().subtract(days, 'days'));
-
-    switch (selectedPeriod) {
-      case 'week':
-        base = base.filter(inRange(7));
-        break;
-      case 'month':
-        base = base.filter(inRange(30));
-        break;
-      case 'year':
-        base = base.filter(inRange(365));
-        break;
-      default:
-        break;
-    }
-
-    // Fallback anti-blanco: usa 2 últimas lecturas del medidor o globales
-    if (base.length < 2) {
-      const source = selectedMeter === 'all' ? allReadings : allReadings.filter(r => r.meterId === selectedMeter);
-      base = [...source].sort((a, b) => toJSDate(a.date) - toJSDate(b.date)).slice(-2);
-    }
-
-    setIsFetching(false);
-    return base.sort((a, b) => toJSDate(a.date) - toJSDate(b.date));
-  }, [allReadings, selectedMeter, selectedPeriod]);
-
-  // =========================
-  // 3) Preparación de gráficos y KPIs
-  // =========================
-
-  // Línea de evolución (kWh o $)
-  const lineData = useMemo(() => {
-    const dataPoints = filteredReadings.map((r) => {
-      const v = unit === 'kWh' ? Number(r.consumption || 0) : Number(r.cost || 0);
-      return Number.isFinite(v) ? v : 0;
-    });
-    const labels = filteredReadings.map((r) => {
-      const d = moment(toJSDate(r.date));
-      if (selectedPeriod === 'week') return d.format('ddd');
-      if (selectedPeriod === 'month') return d.format('DD/MM');
-      return d.format('MMM');
-    });
-
-    if (dataPoints.length > 0 && dataPoints.every((d) => d === 0)) {
-      dataPoints[dataPoints.length - 1] = 0.1;
-    }
-
-    return {
-      labels,
-      datasets: [
-        {
-          data: dataPoints,
-          color: (opacity = 1) => hexToRgba(colors.PRIMARY, opacity),
-
-          strokeWidth: 3,
-        },
-      ],
-      legend: [selectedMeter === 'all' ? (unit === 'kWh' ? 'Consumo (todos)' : 'Costo (todos)') : (unit === 'kWh' ? 'Consumo' : 'Costo')],
-    };
-  }, [filteredReadings, selectedPeriod, selectedMeter, unit]);
-
-  // Pie: distribución por medidor (solo cuando 'all')
-  const pieData = useMemo(() => {
-    const meterMap = {};
-    filteredReadings.forEach((r) => {
-      const c = Number(r.consumption || 0);
-      if (c <= 0) return;
-      const key = r.meterName || r.meterId;
-      if (!meterMap[key]) {
-        meterMap[key] = {
-          name: key,
-          consumption: 0,
-          color: r.meterColor || getRandomColor(),
-          legendFontColor: colors.TEXT_DARK,
-          legendFontSize: 13,
-        };
-      }
-      meterMap[key].consumption += c;
-    });
-
-    const result = Object.values(meterMap).map((m) => ({
-      name: m.name,
-      population: parseFloat(m.consumption.toFixed(2)),
-      color: m.color,
-      legendFontColor: m.legendFontColor,
-      legendFontSize: m.legendFontSize,
-    }));
-
-    setPieChartData(result);
-    return result;
-  }, [filteredReadings, colors.TEXT_DARK]);
-
-  // KPIs + tendencia
-  const kpis = useMemo(() => {
-    let totalConsumption = 0;
-    let totalCost = 0;
-    const consumptions = [];
-
-    filteredReadings.forEach((r) => {
-      const c = Number(r.consumption || 0);
-      const cost = Number(r.cost || 0);
-      if (c > 0) {
-        totalConsumption += c;
-        totalCost += cost;
-        consumptions.push(c);
-      }
-    });
-
-    const avg = consumptions.length ? totalConsumption / consumptions.length : 0;
-
-    let trend = 0;
-    if (consumptions.length >= 6) {
-      const recent = consumptions.slice(-3).reduce((a, b) => a + b, 0) / 3;
-      const previous = consumptions.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
-      trend = previous > 0 ? ((recent - previous) / previous) * 100 : 0;
-    }
-
-    const out = {
-      totalConsumption: totalConsumption.toFixed(2),
-      totalCost,
-      averageConsumption: avg.toFixed(2),
-      trend: Number.isFinite(trend) ? Number(trend.toFixed(1)) : 0,
-    };
-    setTotalStats(out);
-    return out;
-  }, [filteredReadings]);
-
-  // Alertas
-  useEffect(() => {
-    const thBase = Number(CONFIG?.ALERT_CONSUMPTION_THRESHOLD ?? 0.3);
-    const consumptions = filteredReadings.map((r) => Number(r.consumption || 0)).filter((c) => c > 0);
-    if (consumptions.length < 2) {
-      setAlerts([]);
-      return;
-    }
-
-    const avg = consumptions.reduce((a, b) => a + b, 0) / consumptions.length;
-    if (avg <= 0) {
-      setAlerts([]);
-      return;
-    }
-    const threshold = avg * (1 + thBase);
-
-    const detected = filteredReadings
-      .filter((r) => Number(r.consumption || 0) > threshold)
-      .map((r) => ({
-        id: r.id,
-        meterName: r.meterName,
-        consumption: Number(r.consumption || 0),
-        date: toJSDate(r.date),
-        percentageOver: (((Number(r.consumption) - avg) / avg) * 100).toFixed(1),
-      }))
-      .slice(0, 2);
-
-    setAlerts(detected);
-  }, [filteredReadings]);
-
-  // === Gráfico de barras: top días/meses (según período) y según unidad ===
-  const barData = useMemo(() => {
-    // Agrupa por día (week/month) o por mes (year)
-    const map = new Map();
-    filteredReadings.forEach((r) => {
-      const d = moment(toJSDate(r.date));
-      const key =
-        selectedPeriod === 'year' ? d.format('YYYY-MM') : d.format('YYYY-MM-DD');
-      const value = unit === 'kWh' ? Number(r.consumption || 0) : Number(r.cost || 0);
-      map.set(key, (map.get(key) || 0) + (Number.isFinite(value) ? value : 0));
-    });
-
-    const entries = Array.from(map.entries()).sort((a, b) => (a[0] < b[0] ? -1 : 1));
-    // Tomamos últimos 7 días / 12 meses / 30 días según período para legibilidad
-    const limited =
-      selectedPeriod === 'week'
-        ? entries.slice(-7)
-        : selectedPeriod === 'month'
-        ? entries.slice(-30)
-        : entries.slice(-12);
-
-    const labels = limited.map(([k]) =>
-      selectedPeriod === 'year' ? moment(k + '-01').format('MMM') : moment(k).format('DD/MM')
-    );
-
-    const data = limited.map(([, v]) => v);
-
-    return {
-      labels,
-      datasets: [{ data }],
-    };
-  }, [filteredReadings, selectedPeriod, unit]);
-
-  // === ProgressChart: avance del presupuesto mensual ===
-  const budgetProgress = useMemo(() => {
-    // Solo tiene sentido en 'month' y unidad costo
-    const monthNow = moment().format('YYYY-MM');
-    const monthCost = filteredReadings
-      .filter((r) => moment(toJSDate(r.date)).format('YYYY-MM') === monthNow)
-      .reduce((acc, r) => acc + Number(r.cost || 0), 0);
-
-    const progress = Math.max(0, Math.min(1, monthCost / MONTHLY_BUDGET_CLP));
-    return { progress, monthCost };
-  }, [filteredReadings]);
-
-  // Animación al cambiar visibilidad de datos
   useFocusEffect(
     useCallback(() => {
       animateEntry();
-    }, [animateEntry, selectedPeriod, selectedMeter, unit])
+    }, [animateEntry])
   );
 
-  // =========================
-  // Render
-  // =========================
+  // Manejo de exportación con feedback visual
+  const handleExport = async () => {
+    try {
+      // VERIFICAR SI PUEDE EXPORTAR (solo Premium)
+      const canExport = await checkCanExport();
+      if (!canExport) {
+        setShowPaywall(true);
+        return;
+      }
+
+      if (!currentPeriodReadings || currentPeriodReadings.length === 0) {
+        Alert.alert('Sin datos', 'No hay lecturas para exportar');
+        return;
+      }
+
+      setIsExporting(true);
+      await exportStatsToCSV(currentPeriodReadings, periodLabel, stats);
+      showToast('Estadísticas exportadas correctamente');
+    } catch (error) {
+      console.error('Error al exportar:', error);
+      Alert.alert('Error', 'No se pudo exportar las estadísticas. Intenta de nuevo.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Valor para el Hero Card
+  const heroValue = useMemo(() => {
+    if (unit === 'kWh') {
+      return formatKWh(stats.totalConsumption, 0);
+    }
+    return formatCLP(stats.totalCost);
+  }, [unit, stats]);
+
+  const heroLabel = useMemo(() => {
+    return unit === 'kWh' ? 'Consumo en el período' : 'Gasto en el período';
+  }, [unit]);
+
+  const heroComparison = useMemo(() => {
+    if (!comparison) return null;
+    return unit === 'kWh' ? comparison.consumptionChange : comparison.costChange;
+  }, [unit, comparison]);
+
+  // Loading inicial
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.BACKGROUND }]}>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={colors.PRIMARY} />
-          <Text style={[styles.loadingText, { color: colors.TEXT_LIGHT }]}>Cargando estadísticas...</Text>
+          <Text style={[styles.loadingText, { color: colors.TEXT_LIGHT }]}>
+            Cargando estadísticas...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const hasLineData = lineData?.datasets?.[0]?.data?.length > 0 && lineData.datasets[0].data.some((v) => v > 0);
-  const showPie = pieData.length > 1 && selectedMeter === 'all';
+  // Estado vacío - sin lecturas
+  if (!allReadings || allReadings.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.BACKGROUND }]}>
+        <EmptyState variant="no-readings" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.BACKGROUND }]}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-
-        {/* Controles */}
-        <View style={[styles.controlsRow]}>
-          {/* Períodos */}
-          <View style={[styles.periodSelector, { backgroundColor: colors.WHITE }]}>
-            {['week', 'month', 'year'].map((period) => (
-              <TouchableOpacity
-                key={period}
-                style={[
-                  styles.periodButton,
-                  selectedPeriod === period && { backgroundColor: colors.PRIMARY },
-                ]}
-                onPress={() => {
-                  if (selectedPeriod === period) return;
-                  setIsFetching(true);
-                  setSelectedPeriod(period);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.periodButtonText,
-                    { color: selectedPeriod === period ? '#FFFFFF' : colors.TEXT_LIGHT },
-                  ]}
-                >
-                  {period === 'week' ? '7 Días' : period === 'month' ? '30 Días' : 'Año'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Unidad */}
-          <View style={[styles.unitToggle, { backgroundColor: colors.WHITE }]}>
-            {['kWh', '$'].map((u) => (
-              <TouchableOpacity
-                key={u}
-                style={[
-                  styles.unitChip,
-                  unit === u && { backgroundColor: colors.ACCENT, borderColor: colors.ACCENT },
-                ]}
-                onPress={() => setUnit(u)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.unitText,
-                    { color: unit === u ? '#FFFFFF' : colors.TEXT_DARK },
-                  ]}
-                >
-                  {u === 'kWh' ? 'Consumo' : 'Costo'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+      {/* Header con título y botón de exportar */}
+      <View style={[styles.header, { backgroundColor: colors.CARD }]}>
+        <View>
+          <Text style={[styles.headerTitle, { color: colors.TEXT_DARK }]}>
+            Estadísticas
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: colors.TEXT_LIGHT }]}>
+            {dateRangeLabel}
+          </Text>
         </View>
+        <TouchableOpacity
+          style={[
+            styles.exportButton,
+            { backgroundColor: isExporting ? colors.TEXT_LIGHT : colors.PRIMARY }
+          ]}
+          onPress={handleExport}
+          activeOpacity={0.7}
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Icon name="file-export-outline" size={20} color="#FFFFFF" />
+          )}
+        </TouchableOpacity>
+      </View>
 
-        {/* Ayuda contextual */}
-        <Text style={[styles.helperText, { color: colors.TEXT_LIGHT }]}>
-          Consejo: usa <Text style={{ fontWeight: '700', color: colors.PRIMARY }}>Consumo</Text> para comparar hábitos y{' '}
-          <Text style={{ fontWeight: '700', color: colors.PRIMARY }}>Costo</Text> para estimar tu boleta.
-        </Text>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Selector de período */}
+        <PeriodSelector
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        />
 
         {/* Selector de medidor */}
-        <View style={[styles.meterSelector, { backgroundColor: colors.WHITE }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <TouchableOpacity
-              style={[
-                styles.meterChip,
-                selectedMeter === 'all' && {
-                  backgroundColor: colors.ACCENT,
-                  borderColor: colors.ACCENT,
-                },
-              ]}
-              onPress={() => {
-                if (selectedMeter === 'all') return;
-                setIsFetching(true);
-                setSelectedMeter('all');
-              }}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.meterChipText,
-                  { color: selectedMeter === 'all' ? '#FFFFFF' : colors.TEXT_DARK },
-                ]}
-              >
-                Todos los medidores
-              </Text>
-            </TouchableOpacity>
+        <MeterFilterChips
+          meters={meters}
+          selectedMeter={selectedMeter}
+          onMeterChange={setSelectedMeter}
+          readingsCounts={readingsCounts}
+        />
 
-            {meters.map((meter) => (
-              <TouchableOpacity
-                key={meter.id}
-                style={[
-                  styles.meterChip,
-                  selectedMeter === meter.id && {
-                    backgroundColor: colors.ACCENT,
-                    borderColor: colors.ACCENT,
-                  },
-                ]}
-                onPress={() => {
-                  if (selectedMeter === meter.id) return;
-                  setIsFetching(true);
-                  setSelectedMeter(meter.id);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.meterChipText,
-                    { color: selectedMeter === meter.id ? '#FFFFFF' : colors.TEXT_DARK },
-                  ]}
-                >
-                  {meter.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        {/* Toggle de unidad (kWh vs $) */}
+        <UnitTogglePro
+          selectedUnit={unit}
+          onUnitChange={setUnit}
+        />
 
-        {/* Loader intermedio suave */}
-        {isFetching && (
-          <View style={{ paddingVertical: 12, alignItems: 'center' }}>
-            <ActivityIndicator size="small" color={colors.PRIMARY} />
-          </View>
-        )}
-
-        {/* Alertas */}
-        {alerts.length > 0 && (
-          <Animated.View
-            style={[
-              styles.alertsContainer,
-              {
-                backgroundColor: '#FEF2F2',
-                transform: [{ scale: animatedValue }],
-                opacity: animatedValue,
-              },
-            ]}
-          >
-            <View style={styles.alertHeader}>
-              <View style={styles.alertHeaderLeft}>
-                <View style={styles.alertIconContainer}>
-                  <Text style={styles.alertIcon}>⚠</Text>
-                </View>
-                <Text style={[styles.alertsTitle, { color: '#DC2626' }]}>
-                  Consumo Alto Detectado
-                </Text>
-              </View>
-            </View>
-
-            {alerts.map((alert) => (
-              <View key={alert.id} style={styles.alertItem}>
-                <View style={styles.alertContent}>
-                  <Text style={[styles.alertMeterName, { color: colors.TEXT_DARK }]}>
-                    {alert.meterName}
-                  </Text>
-                  <Text style={[styles.alertDate, { color: colors.TEXT_LIGHT }]}>
-                    {moment(alert.date).format('DD/MM/YYYY • HH:mm')}
-                  </Text>
-                </View>
-                <View style={styles.alertRight}>
-                  <Text style={[styles.alertConsumption, { color: '#DC2626' }]}>
-                    {alert.consumption} kWh
-                  </Text>
-                  <View style={[styles.alertBadge, { backgroundColor: '#DC2626' }]}>
-                    <Text style={styles.alertBadgeText}>+{alert.percentageOver}%</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-            <Text style={[styles.helperTextSmall, { color: '#991B1B' }]}>
-              Tip: revisa electrodomésticos encendidos y horarios de mayor consumo.
-            </Text>
-          </Animated.View>
-        )}
-
-        {/* KPIs */}
-        <View style={styles.statsContainer}>
-          <StatCard
-            colors={colors}
-            animatedValue={animatedValue}
-            label="Consumo Total"
-            value={`${kpis.totalConsumption} kWh`}
-            subValue={`Promedio por lectura: ${kpis.averageConsumption} kWh`}
-            trend={kpis.trend}
+        {/* Mensaje si no hay datos en el período */}
+        {!hasCurrentData ? (
+          <EmptyState
+            variant={selectedMeter !== 'all' ? 'no-meter-data' : 'no-period-data'}
           />
-          <StatCard
-            colors={colors}
-            animatedValue={animatedValue}
-            label="Costo Total"
-            value={formatCurrency(kpis.totalCost)}
-            subValue="Período visible"
-          />
-        </View>
-
-        {/* Línea de evolución */}
-        {hasLineData && (
-          <Animated.View
-            style={[
-              styles.chartContainer,
-              {
-                backgroundColor: colors.WHITE,
-                transform: [{ scale: animatedValue }],
-                opacity: animatedValue,
-              },
-            ]}
-          >
-            <View style={styles.chartHeader}>
-              <Text style={[styles.chartTitle, { color: colors.TEXT_DARK }]}>
-                Evolución {unit === 'kWh' ? 'del Consumo' : 'del Costo'}
-              </Text>
-              <Text style={[styles.chartSubtitle, { color: colors.TEXT_LIGHT }]}>
-                {selectedPeriod === 'week'
-                  ? 'Últimos 7 días'
-                  : selectedPeriod === 'month'
-                  ? 'Últimos 30 días'
-                  : 'Último año'}
-              </Text>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <LineChart
-                data={lineData}
-                width={Math.max(CHART_WIDTH, lineData.labels.length * 56)}
-                height={280}
-                yAxisSuffix={unit === 'kWh' ? ' kWh' : ''}
-                yAxisLabel={unit === '$' ? '$' : ''}
-                chartConfig={{
-                  backgroundColor: colors.WHITE,
-                  backgroundGradientFrom: colors.WHITE,
-                  backgroundGradientTo: colors.WHITE,
-                  decimalPlaces: unit === '$' ? 0 : 1,
-               color: (opacity = 1) => hexToRgba(colors.PRIMARY, opacity),
-labelColor: (opacity = 1) => hexToRgba(colors.TEXT_LIGHT, opacity),
-propsForDots: {
-  r: '5',
-  strokeWidth: '2',
-  stroke: colors.PRIMARY,
-  fill: colors.BACKGROUND,
-},
-
-                  propsForBackgroundLines: {
-                    strokeDasharray: '',
-                    stroke: '#ECEFF3',
-                    strokeWidth: 1,
-                  },
-                }}
-                bezier
-                style={styles.chart}
-                withShadow={false}
-                withInnerLines
-                withHorizontalLabels
-                withVerticalLabels
-                segments={4}
-                formatYLabel={(y) => {
-                  const v = clamp(Number(y), 0, Number(y));
-                  return unit === '$' ? `${Math.round(v)}` : `${v}`;
-                }}
-              />
-            </ScrollView>
-
-            <Text style={[styles.helperTextSmall, { color: colors.TEXT_LIGHT }]}>
-              Consejo: si ves picos en días específicos, intenta identificar qué actividad los causó.
-            </Text>
-          </Animated.View>
-        )}
-
-        {/* Barras: comparativa por día/mes */}
-        <Animated.View
-          style={[
-            styles.chartContainer,
-            {
-              backgroundColor: colors.WHITE,
-              transform: [{ scale: animatedValue }],
-              opacity: animatedValue,
-            },
-          ]}
-        >
-          <View style={styles.chartHeader}>
-            <Text style={[styles.chartTitle, { color: colors.TEXT_DARK }]}>
-              {selectedPeriod === 'year' ? 'Consumo/Costo por Mes' : 'Consumo/Costo por Día'}
-            </Text>
-            <Text style={[styles.chartSubtitle, { color: colors.TEXT_LIGHT }]}>
-              Vista resumida para comparar fácilmente
-            </Text>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <BarChart
-              data={barData}
-              width={Math.max(CHART_WIDTH, barData.labels.length * 44)}
-              height={240}
-              yAxisSuffix={unit === 'kWh' ? ' kWh' : ''}
-              yAxisLabel={unit === '$' ? '$' : ''}
-              chartConfig={{
-                backgroundColor: colors.WHITE,
-                backgroundGradientFrom: colors.WHITE,
-                backgroundGradientTo: colors.WHITE,
-                decimalPlaces: unit === '$' ? 0 : 1,
-                color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-                barPercentage: 0.6,
-                propsForBackgroundLines: {
-                  strokeDasharray: '',
-                  stroke: '#ECEFF3',
-                  strokeWidth: 1,
-                },
-              }}
-              style={styles.chart}
-              fromZero
-              showValuesOnTopOfBars
-              withInnerLines
+        ) : (
+          <>
+            {/* Hero Card con valor principal */}
+            <HeroStatCard
+              value={heroValue}
+              label={heroLabel}
+              comparison={heroComparison}
+              unit={unit}
+              animatedValue={animatedValue}
             />
-          </ScrollView>
 
-          <Text style={[styles.helperTextSmall, { color: colors.TEXT_LIGHT }]}>
-            Tip: las barras ayudan a ver rápidamente qué días/meses gastan más.
-          </Text>
-        </Animated.View>
+            {/* Panel de insights inteligentes */}
+            <InsightsCard
+              insights={insights}
+              animatedValue={animatedValue}
+            />
 
-        {/* Progreso de presupuesto mensual */}
-        {unit === '$' && selectedPeriod !== 'year' && (
-          <Animated.View
-            style={[
-              styles.chartContainer,
-              {
-                backgroundColor: colors.WHITE,
-                transform: [{ scale: animatedValue }],
-                opacity: animatedValue,
-              },
-            ]}
-          >
-            <View style={styles.chartHeader}>
-              <Text style={[styles.chartTitle, { color: colors.TEXT_DARK }]}>Avance del Presupuesto Mensual</Text>
-              <Text style={[styles.chartSubtitle, { color: colors.TEXT_LIGHT }]}>
-                Presupuesto referencial: {formatCurrency(MONTHLY_BUDGET_CLP)}
-              </Text>
-            </View>
+            {/* Stats rápidas */}
+            <QuickStatsRow stats={stats} />
 
-            <View style={{ alignItems: 'center' }}>
-              <ProgressChart
-                data={{ data: [budgetProgress.progress] }}
-                width={CHART_WIDTH * 0.7}
-                height={180}
-                strokeWidth={12}
-                radius={52}
-                chartConfig={{
-                  backgroundColor: colors.WHITE,
-                  backgroundGradientFrom: colors.WHITE,
-                  backgroundGradientTo: colors.WHITE,
-                  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-                }}
-                hideLegend={false}
-              />
-              <Text style={[styles.progressText, { color: colors.TEXT_DARK }]}>
-                Gastado este mes: {formatCurrency(budgetProgress.monthCost)} ({Math.round(budgetProgress.progress * 100)}%)
-              </Text>
-              <Text style={[styles.helperTextSmall, { color: colors.TEXT_LIGHT }]}>
-                Consejo: si superas el 80%, considera reducir consumos en horas punta.
-              </Text>
-            </View>
-          </Animated.View>
-        )}
+            {/* Sistema de tabs para gráficos */}
+            <ChartsTabView
+              data={currentPeriodReadings}
+              pieData={pieData}
+              unit={unit}
+              isDark={isDark}
+              colors={colors}
+              showPieChart={pieData.length > 1}
+            />
 
-        {/* Distribución por medidor (torta) */}
-        {showPie && (
-          <Animated.View
-            style={[
-              styles.chartContainer,
-              {
-                backgroundColor: colors.WHITE,
-                transform: [{ scale: animatedValue }],
-                opacity: animatedValue,
-              },
-            ]}
-          >
-            <View style={styles.chartHeader}>
-              <Text style={[styles.chartTitle, { color: colors.TEXT_DARK }]}>Distribución por Medidor</Text>
-              <Text style={[styles.chartSubtitle, { color: colors.TEXT_LIGHT }]}>
-                ¿Cuál de tus medidores consume más?
-              </Text>
-            </View>
-            <View style={styles.pieChartWrapper}>
-              <PieChart
-                data={pieChartData}
-                width={CHART_WIDTH}
-                height={240}
-                chartConfig={{
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                }}
-                accessor="population"
-                backgroundColor="transparent"
-                paddingLeft="10"
-                center={[0, 0]}
-                absolute
-                hasLegend
-              />
-            </View>
-            <Text style={[styles.helperTextSmall, { color: colors.TEXT_LIGHT }]}>
-              Sugerencia: enfoca tus esfuerzos de ahorro en los medidores con mayor participación.
-            </Text>
-          </Animated.View>
-        )}
+            {/* Acordeón con estadísticas detalladas */}
+            <DetailedStatsAccordion stats={stats} />
 
-        {/* Resumen de medidores */}
-        <Animated.View
-          style={[
-            styles.metersContainer,
-            {
-              backgroundColor: colors.WHITE,
-              transform: [{ scale: animatedValue }],
-              opacity: animatedValue,
-            },
-          ]}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.TEXT_DARK }]}>
-            Resumen de Medidores
-          </Text>
-          {meters.map((meter, index) => (
-            <TouchableOpacity
-              key={meter.id}
-              style={[
-                styles.meterRow,
-                {
-                  borderLeftColor: meter.color || colors.ACCENT,
-                  marginBottom: index === meters.length - 1 ? 0 : 12,
-                },
-              ]}
-              onPress={() => {
-                if (selectedMeter === meter.id) return;
-                setIsFetching(true);
-                setSelectedMeter(meter.id);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.meterInfo}>
-                <Text style={[styles.meterName, { color: colors.TEXT_DARK }]}>{meter.name}</Text>
-                <Text style={[styles.meterCompany, { color: colors.TEXT_LIGHT }]}>{meter.company}</Text>
-              </View>
-              <View style={styles.meterStats}>
-                <Text style={[styles.meterReading, { color: colors.PRIMARY }]}>
-                  {meter.lastReading} kWh
+            {/* Resumen de medidores */}
+            {meters.length > 1 && (
+              <View style={[styles.metersContainer, { backgroundColor: colors.CARD, borderColor: colors.BORDER }]}>
+                <Text style={[styles.sectionTitle, { color: colors.TEXT_DARK }]}>
+                  Resumen de Medidores
                 </Text>
-                <Text style={[styles.meterCost, { color: colors.TEXT_LIGHT }]}>
-                  {formatCurrency(meter.lastCost)}
-                </Text>
+                {meters.map((meter) => (
+                  <TouchableOpacity
+                    key={meter.id}
+                    style={[
+                      styles.meterRow,
+                      {
+                        backgroundColor: colors.BACKGROUND,
+                        borderLeftColor: meter.color || colors.ACCENT,
+                      },
+                    ]}
+                    onPress={() => setSelectedMeter(meter.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.meterInfo}>
+                      <Text style={[styles.meterName, { color: colors.TEXT_DARK }]} numberOfLines={1}>
+                        {meter.name}
+                      </Text>
+                      <Text style={[styles.meterCompany, { color: colors.TEXT_LIGHT }]} numberOfLines={1}>
+                        {meter.company}
+                      </Text>
+                    </View>
+                    <View style={styles.meterStats}>
+                      <Text style={[styles.meterReading, { color: colors.PRIMARY }]} numberOfLines={1}>
+                        {formatKWh(meter.lastReading, 0)}
+                      </Text>
+                      <Text style={[styles.meterCost, { color: colors.TEXT_LIGHT }]} numberOfLines={1}>
+                        {formatCLP(meter.lastCost)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </TouchableOpacity>
-          ))}
-          <Text style={[styles.helperTextSmall, { color: colors.TEXT_LIGHT, marginTop: 8 }]}>
-            Tip: toca un medidor para filtrar todos los gráficos con sus datos.
-          </Text>
-        </Animated.View>
+            )}
+          </>
+        )}
 
         <View style={styles.spacer} />
       </ScrollView>
+
+      {/* Indicador de carga intermedio */}
+      {isFetching && (
+        <View style={[styles.fetchingIndicator, { backgroundColor: colors.PRIMARY }]}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        </View>
+      )}
+
+      {/* Paywall para upgrade a Premium */}
+      <Paywall
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onUpgrade={() => {
+          setShowPaywall(false);
+          navigation.navigate('Pricing', {
+            feature: 'exportación a Excel',
+            onUpgrade: () => {
+              // Después de activar premium, cerrar Pricing
+              navigation.goBack();
+            },
+          });
+        }}
+        feature="exportación a Excel"
+        reason="La exportación de datos está disponible solo en el plan Premium"
+      />
     </SafeAreaView>
   );
 };
 
-// ===== Subcomponentes =====
-const StatCard = ({ colors, animatedValue, label, value, subValue, trend }) => (
-  <Animated.View
-    style={[
-      styles.statCard,
-      {
-        backgroundColor: colors.WHITE,
-        transform: [{ scale: animatedValue }],
-        opacity: animatedValue,
-      },
-    ]}
-  >
-    <View style={styles.statCardHeader}>
-      <Text style={[styles.statLabel, { color: colors.TEXT_LIGHT }]}>{label}</Text>
-      {typeof trend === 'number' && (
-        <View
-          style={[
-            styles.trendBadge,
-            { backgroundColor: trend >= 0 ? '#FEE2E2' : '#D1FAE5' },
-          ]}
-        >
-          <Text
-            style={[
-              styles.trendText,
-              { color: trend >= 0 ? '#EF4444' : '#10B981' },
-            ]}
-          >
-            {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
-          </Text>
-        </View>
-      )}
-    </View>
-    <Text style={[styles.statValue, { color: colors.PRIMARY }]}>{value}</Text>
-    {subValue ? (
-      <Text style={[styles.statSubValue, { color: colors.TEXT_LIGHT }]}>{subValue}</Text>
-    ) : null}
-  </Animated.View>
-);
-
-// ===== Estilos =====
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  centerContent: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40,
-  },
-  loadingText: { marginTop: 16, fontSize: 15, fontWeight: '500' },
-
-  controlsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-
-  periodSelector: {
+  container: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: SPACING['3xl'],
+  },
+  header: {
     flexDirection: 'row',
-    borderRadius: 12, padding: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 3, elevation: 2,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    marginBottom: SPACING.sm,
   },
-  periodButton: {
-    flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+  headerTitle: {
+    fontSize: TYPOGRAPHY.sizes['2xl'],
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
-  periodButtonText: { fontSize: 13, fontWeight: '600' },
-
-  unitToggle: {
-    flexDirection: 'row',
-    borderRadius: 12, padding: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 3, elevation: 2,
+  headerSubtitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    marginTop: SPACING.xs / 2,
   },
-  unitChip: {
-    paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 6,
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+  exportButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  unitText: { fontSize: 13, fontWeight: '700' },
-
-  helperText: {
-    marginHorizontal: 16, marginBottom: 8, fontSize: 12, lineHeight: 18,
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING['4xl'],
   },
-  helperTextSmall: {
-    marginTop: 8, fontSize: 12, lineHeight: 18,
+  loadingText: {
+    marginTop: SPACING.lg,
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
-
-  meterSelector: {
-    marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 12,
-    borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 3, elevation: 2,
-    backgroundColor: '#FFF',
+  emptyIcon: {
+    marginBottom: SPACING.xl,
   },
-  meterChip: {
-    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, marginRight: 8,
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+  emptyTitle: {
+    fontSize: TYPOGRAPHY.sizes.xl,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginBottom: SPACING.md,
+    textAlign: 'center',
   },
-  meterChipText: { fontSize: 13, fontWeight: '600' },
-
-  statsContainer: { paddingHorizontal: 16, gap: 12, marginBottom: 16 },
-  statCard: {
-    padding: 20, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  emptyMessage: {
+    fontSize: TYPOGRAPHY.sizes.base,
+    lineHeight: TYPOGRAPHY.sizes.base * 1.5,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.xl,
   },
-  statCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statLabel: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  trendBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  trendText: { fontSize: 11, fontWeight: '700' },
-  statValue: { fontSize: 28, fontWeight: '700', marginBottom: 4 },
-  statSubValue: { fontSize: 13, fontWeight: '500' },
-
-  alertsContainer: {
-    marginHorizontal: 16, borderRadius: 16, padding: 16, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#DC2626',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
+  noDataContainer: {
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING['3xl'],
+    paddingHorizontal: SPACING.xl,
+    borderRadius: SPACING.lg,
+    alignItems: 'center',
   },
-  alertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  alertHeaderLeft: { flexDirection: 'row', alignItems: 'center' },
-  alertIconContainer: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center', marginRight: 10,
+  noDataIcon: {
+    marginBottom: SPACING.lg,
+    opacity: 0.5,
   },
-  alertIcon: { fontSize: 16 },
-  alertsTitle: { fontSize: 15, fontWeight: '700' },
-  alertItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#FEE2E2' },
-  alertContent: { flex: 1 },
-  alertMeterName: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  alertDate: { fontSize: 12 },
-  alertRight: { alignItems: 'flex-end' },
-  alertConsumption: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
-  alertBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  alertBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
-
-  chartContainer: {
-    marginHorizontal: 16, marginBottom: 16, borderRadius: 16, padding: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+  noDataText: {
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
   },
-  chartHeader: { marginBottom: 16 },
-  chartTitle: { fontSize: 17, fontWeight: '700', marginBottom: 4 },
-  chartSubtitle: { fontSize: 13, fontWeight: '500' },
-  chart: { marginVertical: 8, borderRadius: 16 },
-  pieChartWrapper: { alignItems: 'center' },
-  progressText: { marginTop: 10, fontSize: 14, fontWeight: '700' },
-
+  noDataSubtext: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    textAlign: 'center',
+  },
   metersContainer: {
-    marginHorizontal: 16, marginBottom: 16, borderRadius: 16, padding: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
+    borderRadius: SPACING.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 16 },
+  sectionTitle: {
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginBottom: SPACING.md,
+  },
   meterRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 16, paddingLeft: 16, paddingRight: 12, borderLeftWidth: 4, borderRadius: 12, backgroundColor: '#F9FAFB',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingLeft: SPACING.md,
+    paddingRight: SPACING.sm,
+    borderLeftWidth: 4,
+    borderRadius: SPACING.md,
+    marginBottom: SPACING.sm,
   },
-  meterInfo: { flex: 1 },
-  meterName: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  meterCompany: { fontSize: 13, fontWeight: '500' },
-  meterStats: { alignItems: 'flex-end' },
-  meterReading: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  meterCost: { fontSize: 13, fontWeight: '500' },
-
-  spacer: { height: 32 },
+  meterInfo: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  meterName: {
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginBottom: SPACING.xs / 2,
+  },
+  meterCompany: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+  },
+  meterStats: {
+    alignItems: 'flex-end',
+  },
+  meterReading: {
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginBottom: SPACING.xs / 2,
+  },
+  meterCost: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+  },
+  spacer: {
+    height: SPACING['3xl'],
+  },
+  fetchingIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

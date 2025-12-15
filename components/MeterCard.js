@@ -1,39 +1,44 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useDarkMode } from '../utils/darkModeContext';
 import { CONFIG } from '../utils/constants';
-import { formatCurrency } from '../utils/calculations';
+import { formatKWh, formatCLP } from '../utils/formatHelpers';
+import { toDateOrNow } from '../utils/dateHelpers';
+import { SPACING, RADIUS, TYPOGRAPHY, ELEVATION } from '../constants/theme';
+import { fadeIn, springBounce } from '../utils/animations';
+import StatusIndicator from './ui/StatusIndicator';
+import IconButton from './ui/IconButton';
+import Icon from './Icon';
 import moment from 'moment';
 
-export const MeterCard = ({ meter, onPress, onDelete }) => {
-  const { colors } = useDarkMode();
+export const MeterCard = ({ meter, onPress, onDelete, index = 0 }) => {
+  const { colors, isDark } = useDarkMode();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   const lastReading = meter.lastReading || 0;
   const lastCost = meter.lastCost || 0;
+  const monthlyBudget = meter.monthlyBudget || 30000;
 
   // Calcular días desde última lectura
-  const lastReadingDate = meter.updatedAt?.toDate?.() || new Date();
+  const lastReadingDate = toDateOrNow(meter.updatedAt);
   const daysSinceLastReading = moment().diff(moment(lastReadingDate), 'days');
 
-  // Determinar color de alerta
-  const getAlertColor = () => {
+  // Determinar status y color de alerta
+  const getAlertStatus = () => {
     if (daysSinceLastReading >= CONFIG.DAYS_WITHOUT_READING_CRITICAL) {
-      return '#EF4444'; // Rojo - crítico
+      return { status: 'error', color: colors.ERROR };
     }
     if (daysSinceLastReading >= CONFIG.DAYS_WITHOUT_READING_WARNING) {
-      return '#F59E0B'; // Amarillo - alerta
+      return { status: 'warning', color: colors.WARNING };
     }
-    return colors.ACCENT; // Verde - normal
+    return { status: 'success', color: colors.SUCCESS };
   };
 
-  const getAlertIcon = () => {
-    if (daysSinceLastReading >= CONFIG.DAYS_WITHOUT_READING_CRITICAL) {
-      return '🔴';
-    }
-    if (daysSinceLastReading >= CONFIG.DAYS_WITHOUT_READING_WARNING) {
-      return '🟡';
-    }
-    return '🟢';
-  };
+  const alertInfo = getAlertStatus();
+  const needsReading = daysSinceLastReading >= CONFIG.DAYS_WITHOUT_READING_WARNING;
 
   const getAlertText = () => {
     if (daysSinceLastReading === 0) {
@@ -45,142 +50,338 @@ export const MeterCard = ({ meter, onPress, onDelete }) => {
     return `Hace ${daysSinceLastReading}d`;
   };
 
+  // Calcular progreso de presupuesto
+  const budgetProgress = monthlyBudget > 0 ? (lastCost / monthlyBudget) * 100 : 0;
+  const isOverBudget = budgetProgress > 100;
+
+  // Gradiente de fondo sutil
+  const cardGradient = isDark
+    ? ['rgba(59, 130, 246, 0.03)', 'rgba(37, 99, 235, 0.05)']
+    : ['rgba(96, 165, 250, 0.03)', 'rgba(59, 130, 246, 0.05)'];
+
+  // Gradiente de progress bar
+  const progressGradient = isOverBudget
+    ? [colors.ERROR, colors.WARNING]
+    : budgetProgress > 80
+    ? [colors.WARNING, colors.ACCENT]
+    : [colors.SUCCESS, colors.PRIMARY];
+
+  // Animación de entrada con delay basado en índice
+  useEffect(() => {
+    const delay = index * 100;
+    setTimeout(() => {
+      Animated.parallel([
+        fadeIn(fadeAnim, 400),
+        springBounce(scaleAnim, 1),
+      ]).start();
+    }, delay);
+  }, []);
+
+  // Animación de pulso si necesita lectura
+  useEffect(() => {
+    if (needsReading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.02,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [needsReading]);
+
   return (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.WHITE,
-          borderLeftColor: getAlertColor(),
-        },
-      ]}
-      onPress={onPress}
+    <Animated.View
+      style={{
+        opacity: fadeAnim,
+        transform: [
+          { scale: Animated.multiply(scaleAnim, pulseAnim) }
+        ]
+      }}
     >
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={[styles.meterName, { color: colors.PRIMARY }]}>
-            {meter.name}
-          </Text>
-          <Text style={[styles.company, { color: colors.TEXT_LIGHT }]}>
-            {meter.company} • {meter.region}
-          </Text>
-        </View>
-        {onDelete && (
-          <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
-            <Text style={styles.deleteText}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <TouchableOpacity
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.CARD,
+            borderLeftColor: alertInfo.color,
+          },
+        ]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        {/* Gradiente de fondo sutil */}
+        <LinearGradient
+          colors={cardGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
 
-      {/* Indicador de días sin lectura */}
-      <View style={[styles.alertBanner, { backgroundColor: `${getAlertColor()}15` }]}>
-        <Text style={styles.alertIcon}>{getAlertIcon()}</Text>
-        <Text style={[styles.alertText, { color: getAlertColor() }]}>
-          Última lectura: {getAlertText()}
-        </Text>
-      </View>
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <View style={[styles.meterIconBg, { backgroundColor: `${alertInfo.color}15` }]}>
+                <Icon name="gauge" size={24} color={alertInfo.color} />
+              </View>
+              <View style={styles.meterInfo}>
+                <Text style={[styles.meterName, { color: colors.TEXT_DARK }]}>
+                  {meter.name}
+                </Text>
+                <View style={styles.companyRow}>
+                  <Icon name="office-building" size={12} color={colors.TEXT_LIGHT} />
+                  <Text style={[styles.company, { color: colors.TEXT_LIGHT }]}>
+                    {meter.company}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            {onDelete && (
+              <IconButton
+                icon="close"
+                onPress={onDelete}
+                variant="solid"
+                color="error"
+                size="sm"
+              />
+            )}
+          </View>
 
-      <View style={[styles.stats, { borderTopColor: colors.BACKGROUND }]}>
-        <View style={styles.stat}>
-          <Text style={[styles.statLabel, { color: colors.TEXT_LIGHT }]}>
-            Última lectura
-          </Text>
-          <Text style={[styles.statValue, { color: colors.PRIMARY }]}>
-            {lastReading} kWh
-          </Text>
+          {/* Indicador de días sin lectura */}
+          <View style={[styles.alertBanner, { backgroundColor: `${alertInfo.color}10` }]}>
+            <StatusIndicator status={alertInfo.status} size={10} style={styles.statusDot} />
+            <Text style={[styles.alertText, { color: alertInfo.color }]}>
+              Última lectura: {getAlertText()}
+            </Text>
+            {needsReading && (
+              <View style={[styles.alertBadge, { backgroundColor: alertInfo.color }]}>
+                <Icon name="alert" size={12} color="#FFFFFF" />
+              </View>
+            )}
+          </View>
+
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            <View style={[styles.statCard, { backgroundColor: colors.BACKGROUND }]}>
+              <Icon name="lightning-bolt" size={16} color={colors.PRIMARY} style={styles.statIcon} />
+              <Text style={[styles.statLabel, { color: colors.TEXT_LIGHT }]}>
+                Última lectura
+              </Text>
+              <Text style={[styles.statValue, { color: colors.PRIMARY }]}>
+                {formatKWh(lastReading, 0)}
+              </Text>
+            </View>
+
+            <View style={[styles.statCard, { backgroundColor: colors.BACKGROUND }]}>
+              <Icon name="cash" size={16} color={colors.ACCENT} style={styles.statIcon} />
+              <Text style={[styles.statLabel, { color: colors.TEXT_LIGHT }]}>
+                Último costo
+              </Text>
+              <Text style={[styles.statValue, { color: colors.ACCENT }]}>
+                {formatCLP(lastCost)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Progress Bar de Presupuesto */}
+          {monthlyBudget > 0 && (
+            <View style={styles.budgetSection}>
+              <View style={styles.budgetHeader}>
+                <View style={styles.budgetLabelContainer}>
+                  <Icon name="target" size={14} color={colors.TEXT_LIGHT} />
+                  <Text style={[styles.budgetLabel, { color: colors.TEXT_LIGHT }]}>
+                    Presupuesto mensual
+                  </Text>
+                </View>
+                <Text style={[styles.budgetPercentage, { color: isOverBudget ? colors.ERROR : colors.TEXT_DARK }]}>
+                  {budgetProgress.toFixed(0)}%
+                </Text>
+              </View>
+
+              {/* Progress Bar */}
+              <View style={[styles.progressBarBg, { backgroundColor: colors.BORDER }]}>
+                <LinearGradient
+                  colors={progressGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.progressBarFill, { width: `${Math.min(budgetProgress, 100)}%` }]}
+                />
+              </View>
+
+              {/* Budget Info */}
+              <View style={styles.budgetInfo}>
+                <Text style={[styles.budgetText, { color: colors.TEXT_LIGHT }]}>
+                  {formatCLP(lastCost)} de {formatCLP(monthlyBudget)}
+                </Text>
+                {isOverBudget && (
+                  <View style={[styles.overBudgetBadge, { backgroundColor: `${colors.ERROR}15` }]}>
+                    <Icon name="alert-circle" size={12} color={colors.ERROR} />
+                    <Text style={[styles.overBudgetText, { color: colors.ERROR }]}>
+                      Sobre presupuesto
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
         </View>
-        <View style={[styles.divider, { backgroundColor: colors.BACKGROUND }]} />
-        <View style={styles.stat}>
-          <Text style={[styles.statLabel, { color: colors.TEXT_LIGHT }]}>
-            Último costo
-          </Text>
-          <Text style={[styles.statValue, { color: colors.ACCENT }]}>
-            {formatCurrency(lastCost)}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: RADIUS.xl,
+    marginBottom: SPACING.md,
+    borderLeftWidth: 6,
+    overflow: 'hidden',
+    ...ELEVATION.md,
+  },
+  content: {
+    padding: SPACING.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   headerContent: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+  },
+  meterIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  meterInfo: {
+    flex: 1,
   },
   meterName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: TYPOGRAPHY.sizes.xl,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginBottom: SPACING.xs / 2,
+  },
+  companyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs / 2,
   },
   company: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  deleteBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#EF4444',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
   alertBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 12,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
   },
-  alertIcon: {
-    fontSize: 16,
-    marginRight: 8,
+  statusDot: {
+    marginRight: SPACING.sm,
   },
   alertText: {
-    fontSize: 12,
-    fontWeight: '600',
+    flex: 1,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
-  stats: {
+  alertBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  statCard: {
+    flex: 1,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+  },
+  statIcon: {
+    marginBottom: SPACING.xs,
+  },
+  statLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    marginBottom: SPACING.xs / 2,
+    fontWeight: TYPOGRAPHY.weights.medium,
+  },
+  statValue: {
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  budgetSection: {
+    marginTop: SPACING.sm,
+  },
+  budgetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
+    marginBottom: SPACING.sm,
   },
-  stat: {
-    flex: 1,
+  budgetLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
-  statLabel: {
-    fontSize: 11,
-    marginBottom: 4,
+  budgetLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  budgetPercentage: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
-  divider: {
-    width: 1,
-    height: 30,
+  progressBarBg: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: SPACING.sm,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  budgetInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  budgetText: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.medium,
+  },
+  overBudgetBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs / 2,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: RADIUS.sm,
+  },
+  overBudgetText: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });

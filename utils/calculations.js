@@ -5,11 +5,27 @@
  * @returns {number} - Consumo en kWh
  */
 export const calculateConsumption = (previousReading, currentReading) => {
-  if (currentReading < previousReading) {
-    // Si el medidor "se reinició", es normal en algunos casos
-    return currentReading; // O manejar de otra forma
+  // Validar entradas
+  const prev = Number(previousReading) || 0;
+  const curr = Number(currentReading) || 0;
+
+  if (curr < prev) {
+    // CASO: Reset del medidor (poco común pero puede suceder)
+    // Esto podría significar:
+    // 1. El medidor se reinició a 0 (muy raro)
+    // 2. Error en la lectura
+    // 3. Cambio de medidor
+    // Por ahora, asumimos que es un consumo muy alto desde 0
+    // En el futuro, se podría pedir confirmación al usuario
+    console.error(
+      `⚠️ Posible reset de medidor detectado. Anterior: ${prev}, Actual: ${curr}. ` +
+      `Se asume consumo desde 0.`
+    );
+    // Retornar la lectura actual como consumo (asumiendo reset desde 0)
+    return curr;
   }
-  return currentReading - previousReading;
+
+  return curr - prev;
 };
 
 /**
@@ -23,25 +39,14 @@ export const calculateCost = (consumption, costPerKwh) => {
 };
 
 /**
- * Formatea el costo a moneda chilena
- * @param {number} cost - Costo en pesos
- * @returns {string} - Costo formateado
- */
-export const formatCurrency = (cost) => {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    minimumFractionDigits: 0,
-  }).format(cost);
-};
-
-/**
  * Formatea un número con 2 decimales
  * @param {number} number - Número a formatear
- * @returns {number} - Número formateado
+ * @param {boolean} asString - Si es true, retorna string; si es false, retorna number
+ * @returns {string|number} - Número formateado
  */
-export const formatNumber = (number) => {
-  return Math.round(number * 100) / 100;
+export const formatNumber = (number, asString = false) => {
+  const rounded = Math.round(number * 100) / 100;
+  return asString ? rounded.toFixed(2) : rounded;
 };
 
 /**
@@ -65,7 +70,7 @@ export const calculateStats = (readings) => {
   return {
     totalConsumption: formatNumber(total),
     averageConsumption: formatNumber(total / readings.length),
-    maxConsumption: formatNumber(Math.max(...consumptions)),
-    minConsumption: formatNumber(Math.min(...consumptions)),
+    maxConsumption: consumptions.length > 0 ? formatNumber(Math.max(...consumptions)) : '0',
+    minConsumption: consumptions.length > 0 ? formatNumber(Math.min(...consumptions)) : '0',
   };
 };

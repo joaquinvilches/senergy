@@ -7,18 +7,23 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
-import { COLORS } from '../utils/constants';
+import { useDarkMode } from '../utils/darkModeContext';
 import { registerUser, loginUser } from '../services/authService';
 import { createUserProfile } from '../services/meterService';
+import { SPACING, TYPOGRAPHY, RADIUS, ELEVATION } from '../constants/theme';
+import Icon from '../components/Icon';
+import Button from '../components/ui/Button';
 
 export const AuthScreen = () => {
+  const { colors } = useDarkMode();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const styles = getStyles(colors);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -63,7 +68,9 @@ export const AuthScreen = () => {
       <View style={styles.content}>
         {/* Encabezado */}
         <View style={styles.header}>
-          <Text style={styles.emoji}>⚡</Text>
+          <View style={styles.iconContainer}>
+            <Icon name="lightning-bolt" size={64} color={colors.PRIMARY} />
+          </View>
           <Text style={styles.title}>SENERGY</Text>
           <Text style={styles.subtitle}>
             {isLogin ? 'Inicia sesión' : 'Crea tu cuenta'}
@@ -75,7 +82,7 @@ export const AuthScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Correo electrónico"
-            placeholderTextColor={COLORS.TEXT_LIGHT}
+            placeholderTextColor={colors.TEXT_LIGHT}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -85,7 +92,7 @@ export const AuthScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Contraseña"
-            placeholderTextColor={COLORS.TEXT_LIGHT}
+            placeholderTextColor={colors.TEXT_LIGHT}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -96,7 +103,7 @@ export const AuthScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Confirmar contraseña"
-              placeholderTextColor={COLORS.TEXT_LIGHT}
+              placeholderTextColor={colors.TEXT_LIGHT}
               value={passwordConfirm}
               onChangeText={setPasswordConfirm}
               secureTextEntry
@@ -106,19 +113,15 @@ export const AuthScreen = () => {
         </View>
 
         {/* Botón principal */}
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+        <Button
+          title={isLogin ? 'Inicia sesión' : 'Crear cuenta'}
           onPress={handleAuth}
+          variant="primary"
+          size="lg"
+          loading={loading}
           disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={COLORS.WHITE} />
-          ) : (
-            <Text style={styles.buttonText}>
-              {isLogin ? 'Inicia sesión' : 'Crear cuenta'}
-            </Text>
-          )}
-        </TouchableOpacity>
+          fullWidth
+        />
 
         {/* Cambiar modo */}
         <TouchableOpacity
@@ -137,71 +140,56 @@ export const AuthScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: colors.BACKGROUND,
   },
   content: {
-    padding: 20,
+    padding: SPACING.xl,
     justifyContent: 'center',
     minHeight: '100%',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: SPACING['4xl'],
   },
-  emoji: {
-    fontSize: 60,
-    marginBottom: 15,
+  iconContainer: {
+    marginBottom: SPACING.lg,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: COLORS.PRIMARY,
+    fontSize: TYPOGRAPHY.sizes['4xl'],
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: colors.PRIMARY,
     letterSpacing: 2,
   },
   subtitle: {
-    fontSize: 14,
-    color: COLORS.TEXT_LIGHT,
-    marginTop: 8,
+    fontSize: TYPOGRAPHY.sizes.base,
+    color: colors.TEXT_LIGHT,
+    marginTop: SPACING.sm,
   },
   form: {
-    marginBottom: 20,
+    marginBottom: SPACING.xl,
   },
   input: {
-    backgroundColor: COLORS.WHITE,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 12,
-    fontSize: 16,
-    color: COLORS.TEXT_DARK,
+    backgroundColor: colors.CARD,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md + 2,
+    marginBottom: SPACING.md,
+    fontSize: TYPOGRAPHY.sizes.lg,
+    color: colors.TEXT_DARK,
     borderWidth: 1,
-    borderColor: COLORS.BACKGROUND,
-  },
-  button: {
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: COLORS.WHITE,
-    fontSize: 16,
-    fontWeight: 'bold',
+    borderColor: colors.BORDER,
   },
   toggleText: {
     textAlign: 'center',
-    color: COLORS.TEXT_LIGHT,
-    fontSize: 14,
+    color: colors.TEXT_LIGHT,
+    fontSize: TYPOGRAPHY.sizes.base,
+    marginTop: SPACING.lg,
   },
   toggleLink: {
-    color: COLORS.PRIMARY,
-    fontWeight: 'bold',
+    color: colors.PRIMARY,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
 });

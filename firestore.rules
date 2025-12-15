@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper function to validate reading data
+    function isValidReading(reading) {
+      return reading.keys().hasAll(['value', 'consumption', 'cost', 'costPerKwh', 'date'])
+        && reading.value is number
+        && reading.value >= 0
+        && reading.consumption is number
+        && reading.consumption >= 0
+        && reading.cost is number
+        && reading.cost >= 0
+        && reading.costPerKwh is number
+        && reading.costPerKwh > 0
+        && reading.date is timestamp;
+    }
+
+    // Helper function to validate meter data
+    function isValidMeter(meter) {
+      return meter.keys().hasAll(['name', 'company', 'region', 'costPerKwh', 'initialReading', 'lastReading', 'lastCost', 'createdAt', 'updatedAt'])
+        && meter.name is string
+        && meter.name.size() > 0
+        && meter.company is string
+        && meter.region is string
+        && meter.costPerKwh is number
+        && meter.costPerKwh > 0
+        && meter.initialReading is number
+        && meter.initialReading >= 0
+        && meter.lastReading is number
+        && meter.lastCost is number
+        && meter.createdAt is timestamp
+        && meter.updatedAt is timestamp
+        && (!('monthlyBudget' in meter) || (meter.monthlyBudget is number && meter.monthlyBudget >= 0));
+    }
+
+    // Users collection - only authenticated users can read/write their own profile
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.createdAt is timestamp
+        && (!('email' in request.resource.data) || request.resource.data.email is string)
+        && (!('subscription' in request.resource.data) || request.resource.data.subscription in ['FREE', 'PREMIUM'])
+        && (!('subscriptionExpiry' in request.resource.data) || request.resource.data.subscriptionExpiry == null || request.resource.data.subscriptionExpiry is timestamp)
+        && (!('subscriptionStartDate' in request.resource.data) || request.resource.data.subscriptionStartDate == null || request.resource.data.subscriptionStartDate is timestamp);
+      allow update: if isOwner(userId)
+        && (!('subscription' in request.resource.data) || request.resource.data.subscription in ['FREE', 'PREMIUM'])
+        && (!('subscriptionExpiry' in request.resource.data) || request.resource.data.subscriptionExpiry == null || request.resource.data.subscriptionExpiry is timestamp)
+        && (!('subscriptionStartDate' in request.resource.data) || request.resource.data.subscriptionStartDate == null || request.resource.data.subscriptionStartDate is timestamp);
+      allow delete: if isOwner(userId);
+
+      // Meters subcollection - users can only access their own meters
+      match /meters/{meterId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidMeter(request.resource.data);
+        allow update: if isOwner(userId) && isValidMeter(request.resource.data);
+        allow delete: if isOwner(userId);
+
+        // Readings subcollection - users can only access readings of their own meters
+        match /readings/{readingId} {
+          allow read: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidReading(request.resource.data);
+          allow update: if isOwner(userId) && isValidReading(request.resource.data);
+          allow delete: if isOwner(userId);
+        }
+      }
+    }
+
+    // Feedback collection - authenticated users can create feedback
+    match /feedback/{feedbackId} {
+      allow read: if false; // Nobody can read feedback (only admins via console)
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasAll(['userId', 'userEmail', 'type', 'message', 'createdAt', 'status'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.userEmail is string
+        && request.resource.data.type is string
+        && request.resource.data.message is string
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.status == 'pending';
+      allow update: if false; // Users cannot update feedback
+      allow delete: if false; // Users cannot delete feedback
+    }
+
+    // Incidents collection - authenticated users can manage their own incidents
+    match /incidents/{incidentId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'date', 'description', 'type', 'createdAt', 'updatedAt'])
+        && request.resource.data.description is string
+        && request.resource.data.description.size() >= 10
+        && request.resource.data.type is string
+        && request.resource.data.type in ['corte', 'baja_tension', 'sobre_tension', 'fluctuacion', 'otro']
+        && request.resource.data.date is timestamp
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

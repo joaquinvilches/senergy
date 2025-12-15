@@ -11,6 +11,9 @@ import { onAuthChange } from './services/authService';
 import { DarkModeProvider, useDarkMode } from './utils/darkModeContext';
 import { Toast, setToastRef } from './utils/toastUtils';
 import { COLORS } from './utils/constants';
+import { registerForPushNotificationsAsync } from './services/notificationService';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { logger } from './utils/logger';
 
 function AppContent() {
   const [user, setUser] = useState(null);
@@ -25,11 +28,19 @@ function AppContent() {
   }, [toastRef]);
 
   useEffect(() => {
+    logger.info('App starting');
+
     const splashTimer = setTimeout(() => {
       setShowSplash(false);
+      logger.debug('Splash screen hidden');
     }, 6000);
 
     const unsubscribe = onAuthChange((currentUser) => {
+      if (currentUser) {
+        logger.info('User authenticated', { userId: currentUser.uid });
+      } else {
+        logger.info('User not authenticated');
+      }
       setUser(currentUser);
       setLoading(false);
     });
@@ -39,6 +50,15 @@ function AppContent() {
       unsubscribe();
     };
   }, []);
+
+  // Registrar notificaciones cuando el usuario inicia sesión
+  useEffect(() => {
+    if (user) {
+      registerForPushNotificationsAsync().catch((error) => {
+        logger.error('Error al registrar notificaciones', { error });
+      });
+    }
+  }, [user]);
 
   if (showSplash) {
     return <SplashScreen />;
@@ -66,8 +86,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <DarkModeProvider>
-      <AppContent />
-    </DarkModeProvider>
+    <ErrorBoundary>
+      <DarkModeProvider>
+        <AppContent />
+      </DarkModeProvider>
+    </ErrorBoundary>
   );
 }

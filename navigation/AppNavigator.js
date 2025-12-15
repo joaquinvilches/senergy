@@ -1,8 +1,10 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { COLORS } from '../utils/constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDarkMode } from '../utils/darkModeContext';
+import Icon from '../components/Icon';
 
 import { HomeScreen } from '../screens/HomeScreen';
 import { RegisterMeterScreen } from '../screens/RegisterMeterScreen';
@@ -10,19 +12,27 @@ import { MeterDetailScreen } from '../screens/MeterDetailScreen';
 import { NewReadingScreen } from '../screens/NewReadingScreen';
 import { StatsScreen } from '../screens/StatsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { FeedbackScreen } from '../screens/FeedbackScreen';
+import { ReportIncidentScreen } from '../screens/ReportIncidentScreen';
+import { IncidentsListScreen } from '../screens/IncidentsListScreen';
+import { PricingScreen } from '../screens/PricingScreen';
+import { LegalScreen } from '../screens/LegalScreen';
+import OfflineBanner from '../components/OfflineBanner';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Navegación de medidores
 const HomeNavigator = () => {
+  const { colors } = useDarkMode();
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: COLORS.PRIMARY,
+          backgroundColor: colors.PRIMARY,
         },
-        headerTintColor: COLORS.WHITE,
+        headerTintColor: colors.WHITE,
         headerTitleStyle: {
           fontWeight: 'bold',
         },
@@ -57,19 +67,29 @@ const HomeNavigator = () => {
           headerBackTitle: 'Atrás',
         }}
       />
+      <Stack.Screen
+        name="Pricing"
+        component={PricingScreen}
+        options={{
+          title: 'Planes',
+          headerBackTitle: 'Atrás',
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
 // Navegación de estadísticas
 const StatsNavigator = () => {
+  const { colors } = useDarkMode();
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: COLORS.PRIMARY,
+          backgroundColor: colors.PRIMARY,
         },
-        headerTintColor: COLORS.WHITE,
+        headerTintColor: colors.WHITE,
         headerTitleStyle: {
           fontWeight: 'bold',
         },
@@ -82,19 +102,29 @@ const StatsNavigator = () => {
           title: 'Estadísticas',
         }}
       />
+      <Stack.Screen
+        name="Pricing"
+        component={PricingScreen}
+        options={{
+          title: 'Planes',
+          headerBackTitle: 'Atrás',
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
 // Navegación de perfil
 const ProfileNavigator = () => {
+  const { colors } = useDarkMode();
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: COLORS.PRIMARY,
+          backgroundColor: colors.PRIMARY,
         },
-        headerTintColor: COLORS.WHITE,
+        headerTintColor: colors.WHITE,
         headerTitleStyle: {
           fontWeight: 'bold',
         },
@@ -107,57 +137,122 @@ const ProfileNavigator = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="FeedbackScreen"
+        component={FeedbackScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="IncidentsListScreen"
+        component={IncidentsListScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="ReportIncidentScreen"
+        component={ReportIncidentScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="Pricing"
+        component={PricingScreen}
+        options={{
+          title: 'Planes',
+          headerBackTitle: 'Atrás',
+        }}
+      />
+      <Stack.Screen
+        name="LegalScreen"
+        component={LegalScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
 // Navegación de Tabs principal
 export const AppNavigator = () => {
+  const { colors } = useDarkMode();
+  const insets = useSafeAreaInsets();
+
+  // Calcular el padding y altura del TabBar según el dispositivo
+  const tabBarHeight = 60; // Altura base del contenido
+  const tabBarPaddingBottom = Math.max(insets.bottom, 8); // Usar el inset del dispositivo o mínimo 8px
+  const totalTabBarHeight = tabBarHeight + tabBarPaddingBottom;
+
   return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarStyle: {
-          backgroundColor: COLORS.WHITE,
-          borderTopColor: COLORS.BACKGROUND,
-          borderTopWidth: 1,
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 100,
-        },
-        tabBarActiveTintColor: COLORS.PRIMARY,
-        tabBarInactiveTintColor: COLORS.TEXT_LIGHT,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: 4,
-        },
-        headerShown: false,
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeNavigator}
-        options={{
-          tabBarLabel: 'Medidores',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>⚡</Text>,
+    <View style={{ flex: 1 }}>
+      <OfflineBanner />
+      <Tab.Navigator
+        screenOptions={{
+          tabBarStyle: {
+            backgroundColor: colors.CARD,
+            borderTopColor: colors.BORDER,
+            borderTopWidth: 1,
+            paddingBottom: tabBarPaddingBottom,
+            paddingTop: 8,
+            height: totalTabBarHeight,
+          },
+          tabBarActiveTintColor: colors.PRIMARY,
+          tabBarInactiveTintColor: colors.TEXT_LIGHT,
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+            marginTop: 4,
+          },
+          headerShown: false,
         }}
-      />
-      <Tab.Screen
-        name="Stats"
-        component={StatsNavigator}
-        options={{
-          tabBarLabel: 'Estadísticas',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📊</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileNavigator}
-        options={{
-          tabBarLabel: 'Perfil',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
-        }}
-      />
-    </Tab.Navigator>
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeNavigator}
+          options={{
+            tabBarLabel: 'Medidores',
+            tabBarIcon: ({ focused, color }) => (
+              <Icon
+                name={focused ? 'lightning-bolt' : 'lightning-bolt-outline'}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Stats"
+          component={StatsNavigator}
+          options={{
+            tabBarLabel: 'Estadísticas',
+            tabBarIcon: ({ focused, color }) => (
+              <Icon
+                name={focused ? 'chart-box' : 'chart-line'}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileNavigator}
+          options={{
+            tabBarLabel: 'Perfil',
+            tabBarIcon: ({ focused, color }) => (
+              <Icon
+                name={focused ? 'account-circle' : 'account-circle-outline'}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </View>
   );
 };
