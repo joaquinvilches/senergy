@@ -1,8 +1,7 @@
-import { doc, getDoc, setDoc, updateDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { SUBSCRIPTION_PLANS, getPlanConfig } from '../constants/pricing';
 import { logger } from '../utils/logger';
-import moment from 'moment';
 
 /**
  * Servicio de Suscripciones SENERGY
@@ -37,18 +36,16 @@ export const getUserSubscription = async (userId) => {
 
     const userData = userSnap.data();
 
-    // Verificar si la suscripción expiró
+    // Verificar si la suscripción expiró.
+    // NOTA: el cliente ya no puede escribir estos campos (ver firestore.rules);
+    // el webhook de RevenueCat (functions/index.js) es quien revierte a FREE
+    // en Firestore cuando llega el evento EXPIRATION. Aquí solo reflejamos el
+    // estado correcto para la UI mientras ese evento llega.
     if (userData.subscription === SUBSCRIPTION_PLANS.PREMIUM && userData.subscriptionExpiry) {
       const now = Timestamp.now();
 
       if (userData.subscriptionExpiry.toMillis() < now.toMillis()) {
-        // Suscripción expirada, revertir a FREE
-        logger.warn('Subscription expired, reverting to FREE', { userId });
-
-        await updateDoc(userRef, {
-          subscription: SUBSCRIPTION_PLANS.FREE,
-          subscriptionExpiry: null,
-        });
+        logger.warn('Subscription expired locally, showing as FREE pending webhook sync', { userId });
 
         return {
           subscription: SUBSCRIPTION_PLANS.FREE,
@@ -75,70 +72,14 @@ export const getUserSubscription = async (userId) => {
 };
 
 /**
- * Actualiza la suscripción del usuario
- * @param {string} userId - ID del usuario
- * @param {string} planType - 'FREE' o 'PREMIUM'
- * @param {number} durationMonths - Duración en meses (default: 1)
- * @returns {Promise<boolean>}
- */
-export const updateUserSubscription = async (userId, planType, durationMonths = 1) => {
-  try {
-    const userRef = doc(db, 'users', userId);
-
-    const updates = {
-      subscription: planType,
-      updatedAt: Timestamp.now(),
-    };
-
-    if (planType === SUBSCRIPTION_PLANS.PREMIUM) {
-      const now = moment();
-      const expiry = now.add(durationMonths, 'months');
-
-      updates.subscriptionStartDate = Timestamp.now();
-      updates.subscriptionExpiry = Timestamp.fromDate(expiry.toDate());
-
-      logger.info('Subscription upgraded to PREMIUM', {
-        userId,
-        expiryDate: expiry.format('YYYY-MM-DD'),
-      });
-    } else {
-      updates.subscriptionExpiry = null;
-      updates.subscriptionStartDate = null;
-
-      logger.info('Subscription reverted to FREE', { userId });
-    }
-
-    await updateDoc(userRef, updates);
-
-    return true;
-  } catch (error) {
-    logger.error('Error updating user subscription', { userId, planType, error });
-    return false;
-  }
-};
-
-/**
  * Verifica si el usuario puede crear un medidor
+ * NOTA: Ahora todos los planes tienen medidores ilimitados
  * @param {string} userId - ID del usuario
  * @returns {Promise<{canCreate: boolean, reason: string|null}>}
  */
 export const canCreateMeter = async (userId) => {
   try {
-    const { subscription } = await getUserSubscription(userId);
-    const planConfig = getPlanConfig(subscription);
-
-    // Obtener cantidad actual de medidores
-    const metersRef = collection(db, 'users', userId, 'meters');
-    const metersSnap = await getDocs(metersRef);
-    const meterCount = metersSnap.size;
-
-    if (meterCount >= planConfig.maxMeters) {
-      return {
-        canCreate: false,
-        reason: `Has alcanzado el límite de ${planConfig.maxMeters} medidor(es) del plan ${planConfig.name}`,
-      };
-    }
-
+    // Con el nuevo modelo, todos los usuarios tienen medidores ilimitados
     return { canCreate: true, reason: null };
   } catch (error) {
     logger.error('Error checking meter creation limit', { userId, error });
@@ -148,55 +89,19 @@ export const canCreateMeter = async (userId) => {
 
 /**
  * Verifica si el usuario puede crear una lectura este mes
+ * NOTA: Ahora todos los planes tienen lecturas ilimitadas
  * @param {string} userId - ID del usuario
  * @param {string} meterId - ID del medidor
  * @returns {Promise<{canCreate: boolean, reason: string|null, count: number, limit: number}>}
  */
 export const canCreateReading = async (userId, meterId) => {
   try {
-    const { subscription } = await getUserSubscription(userId);
-    const planConfig = getPlanConfig(subscription);
-
-    // Si es Premium, ilimitado
-    if (subscription === SUBSCRIPTION_PLANS.PREMIUM) {
-      return {
-        canCreate: true,
-        reason: null,
-        count: 0,
-        limit: Infinity,
-      };
-    }
-
-    // Para FREE, contar lecturas del mes actual
-    const currentMonth = moment().format('YYYY-MM');
-    const readingsRef = collection(db, 'users', userId, 'meters', meterId, 'readings');
-
-    const readingsSnap = await getDocs(readingsRef);
-
-    let monthReadingsCount = 0;
-    readingsSnap.forEach(doc => {
-      const reading = doc.data();
-      const readingMonth = moment(reading.date.toDate()).format('YYYY-MM');
-
-      if (readingMonth === currentMonth) {
-        monthReadingsCount++;
-      }
-    });
-
-    if (monthReadingsCount >= planConfig.maxReadingsPerMonth) {
-      return {
-        canCreate: false,
-        reason: `Has alcanzado el límite de ${planConfig.maxReadingsPerMonth} lecturas mensuales del plan ${planConfig.name}`,
-        count: monthReadingsCount,
-        limit: planConfig.maxReadingsPerMonth,
-      };
-    }
-
+    // Con el nuevo modelo, todos los usuarios tienen lecturas ilimitadas
     return {
       canCreate: true,
       reason: null,
-      count: monthReadingsCount,
-      limit: planConfig.maxReadingsPerMonth,
+      count: 0,
+      limit: Infinity,
     };
   } catch (error) {
     logger.error('Error checking reading creation limit', { userId, meterId, error });
@@ -211,15 +116,14 @@ export const canCreateReading = async (userId, meterId) => {
 
 /**
  * Verifica si el usuario puede tomar fotos
+ * Función exclusiva del plan Premium (evidencia de respaldo para reclamos)
  * @param {string} userId - ID del usuario
  * @returns {Promise<boolean>}
  */
 export const canTakePhotos = async (userId) => {
   try {
     const { subscription } = await getUserSubscription(userId);
-    const planConfig = getPlanConfig(subscription);
-
-    return planConfig.canTakePhotos;
+    return getPlanConfig(subscription).canTakePhotos;
   } catch (error) {
     logger.error('Error checking photo permission', { userId, error });
     return false;
@@ -228,15 +132,14 @@ export const canTakePhotos = async (userId) => {
 
 /**
  * Verifica si el usuario puede exportar datos
+ * NOTA: Ahora todos los usuarios pueden exportar
  * @param {string} userId - ID del usuario
  * @returns {Promise<boolean>}
  */
 export const canExportData = async (userId) => {
   try {
-    const { subscription } = await getUserSubscription(userId);
-    const planConfig = getPlanConfig(subscription);
-
-    return planConfig.canExport;
+    // Con el nuevo modelo, todos los usuarios pueden exportar
+    return true;
   } catch (error) {
     logger.error('Error checking export permission', { userId, error });
     return false;

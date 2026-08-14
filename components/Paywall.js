@@ -100,7 +100,7 @@ export const Paywall = ({
               </Text>
               <View style={styles.priceRow}>
                 <Text style={[styles.priceAmount, { color: colors.PRIMARY }]}>
-                  $1.000
+                  $2.200
                 </Text>
                 <Text style={[styles.priceUnit, { color: colors.TEXT_LIGHT }]}>
                   CLP/mes

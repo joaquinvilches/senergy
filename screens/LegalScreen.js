@@ -120,7 +120,7 @@ const TermsContent = ({ colors }) => (
       Términos y Condiciones de Uso
     </Text>
     <Text style={[styles.date, { color: colors.TEXT_LIGHT }]}>
-      Última actualización: [PENDIENTE DE PERSONALIZAR]
+      Última actualización: 17 de junio de 2026
     </Text>
 
     <Section
@@ -139,16 +139,18 @@ const TermsContent = ({ colors }) => (
       registrar lecturas y analizar consumo energético.{'\n\n'}
 
       <Text style={{ fontWeight: '600' }}>Plan GRATUITO:{'\n'}</Text>
-      • Hasta 1 medidor{'\n'}
-      • Hasta 20 lecturas mensuales{'\n'}
-      • Estadísticas básicas{'\n\n'}
-
-      <Text style={{ fontWeight: '600' }}>Plan PREMIUM ($1.000 CLP/mes):{'\n'}</Text>
       • Medidores ilimitados{'\n'}
       • Lecturas ilimitadas{'\n'}
-      • Captura de fotografías{'\n'}
-      • Exportación de datos{'\n'}
-      • Estadísticas avanzadas
+      • Exportación a Excel{'\n'}
+      • Estadísticas y gráficos completos{'\n'}
+      • Con anuncios discretos{'\n\n'}
+
+      <Text style={{ fontWeight: '600' }}>Plan PREMIUM ($2.200 CLP/mes):{'\n'}</Text>
+      • Todo lo del plan Gratuito{'\n'}
+      • Captura de fotos del medidor (evidencia de respaldo){'\n'}
+      • Sin anuncios{'\n'}
+      • Soporte prioritario{'\n'}
+      • Acceso anticipado a nuevas funciones
     </Section>
 
     <Section
@@ -209,7 +211,7 @@ const PrivacyContent = ({ colors }) => (
       Política de Privacidad
     </Text>
     <Text style={[styles.date, { color: colors.TEXT_LIGHT }]}>
-      Última actualización: [PENDIENTE DE PERSONALIZAR]
+      Última actualización: 17 de junio de 2026
     </Text>
 
     <Section
@@ -371,7 +373,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: TYPOGRAPHY.SIZE.xl,
+    fontSize: TYPOGRAPHY.sizes.xl,
     fontWeight: '700',
   },
   tabContainer: {
@@ -394,7 +396,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   tabText: {
-    fontSize: TYPOGRAPHY.SIZE.sm,
+    fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: '600',
   },
   scrollView: {
@@ -414,25 +416,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   title: {
-    fontSize: TYPOGRAPHY.SIZE.xxl,
+    fontSize: TYPOGRAPHY.sizes['2xl'],
     fontWeight: '700',
     marginBottom: SPACING.xs,
   },
   date: {
-    fontSize: TYPOGRAPHY.SIZE.sm,
+    fontSize: TYPOGRAPHY.sizes.sm,
     marginBottom: SPACING.lg,
   },
   section: {
     marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: TYPOGRAPHY.SIZE.lg,
+    fontSize: TYPOGRAPHY.sizes.lg,
     fontWeight: '600',
     marginBottom: SPACING.sm,
   },
   sectionContent: {
-    fontSize: TYPOGRAPHY.SIZE.md,
-    lineHeight: TYPOGRAPHY.SIZE.md * 1.5,
+    fontSize: TYPOGRAPHY.sizes.base,
+    lineHeight: TYPOGRAPHY.sizes.base * 1.5,
   },
   infoBox: {
     padding: SPACING.md,
@@ -442,8 +444,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   infoText: {
-    fontSize: TYPOGRAPHY.SIZE.sm,
-    lineHeight: TYPOGRAPHY.SIZE.sm * 1.5,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    lineHeight: TYPOGRAPHY.sizes.sm * 1.5,
   },
   highlightBox: {
     padding: SPACING.md,
@@ -452,7 +454,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   highlightText: {
-    fontSize: TYPOGRAPHY.SIZE.sm,
+    fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: '600',
   },
   footerContainer: {
@@ -460,7 +462,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: TYPOGRAPHY.SIZE.sm,
+    fontSize: TYPOGRAPHY.sizes.sm,
     textAlign: 'center',
     marginBottom: SPACING.md,
   },
@@ -474,7 +476,7 @@ const styles = StyleSheet.create({
   },
   contactButtonText: {
     color: '#FFFFFF',
-    fontSize: TYPOGRAPHY.SIZE.md,
+    fontSize: TYPOGRAPHY.sizes.base,
     fontWeight: '600',
   },
 });

@@ -225,7 +225,13 @@ export const NewReadingScreen = ({ route, navigation }) => {
       // Feedback + volver
       const photoMsg = uploadedPhotoURL ? ' con foto' : '';
       safeToast(`¡Lectura guardada${photoMsg}! Consumo: ${formatKWh(consumption, 1)}`, 'success');
-      setTimeout(() => navigation.goBack(), 300);
+      setTimeout(() => {
+        try {
+          navigation.goBack();
+        } catch (navError) {
+          console.error('Error navigating back after saving reading:', navError);
+        }
+      }, 300);
     } catch (error) {
       console.error('Error adding reading:', error);
       safeToast(`No se pudo guardar la lectura: ${error?.message}`, 'error');

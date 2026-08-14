@@ -10,10 +10,26 @@ import { SplashScreen } from './screens/SplashScreen';
 import { onAuthChange } from './services/authService';
 import { DarkModeProvider, useDarkMode } from './utils/darkModeContext';
 import { Toast, setToastRef } from './utils/toastUtils';
-import { COLORS } from './utils/constants';
 import { registerForPushNotificationsAsync } from './services/notificationService';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { logger } from './utils/logger';
+import { initializeAds } from './services/adsService';
+import { initRevenueCat } from './services/revenueCatService';
+
+// Captura errores no manejados que ocurren fuera del árbol de React (event
+// handlers, promesas, setTimeout) — el ErrorBoundary de abajo NO los detecta.
+// Sin esto, un throw en ese contexto cierra la app sin dejar ningún rastro.
+if (global.ErrorUtils) {
+  const defaultGlobalHandler = global.ErrorUtils.getGlobalHandler();
+  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
+    logger.fatal('Unhandled global error', {
+      message: error?.message,
+      stack: error?.stack,
+      isFatal,
+    });
+    defaultGlobalHandler(error, isFatal);
+  });
+}
 
 function AppContent() {
   const [user, setUser] = useState(null);
@@ -29,6 +45,10 @@ function AppContent() {
 
   useEffect(() => {
     logger.info('App starting');
+
+    initializeAds().catch((error) => {
+      logger.error('Error al inicializar AdMob', { error });
+    });
 
     const splashTimer = setTimeout(() => {
       setShowSplash(false);
@@ -51,11 +71,14 @@ function AppContent() {
     };
   }, []);
 
-  // Registrar notificaciones cuando el usuario inicia sesión
+  // Inicializar servicios cuando el usuario inicia sesión
   useEffect(() => {
     if (user) {
       registerForPushNotificationsAsync().catch((error) => {
         logger.error('Error al registrar notificaciones', { error });
+      });
+      initRevenueCat(user.uid).catch((error) => {
+        logger.error('Error al inicializar RevenueCat', { error });
       });
     }
   }, [user]);

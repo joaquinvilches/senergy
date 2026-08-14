@@ -16,6 +16,8 @@ import { HomeHeader } from '../components/home/HomeHeader';
 import { MonthlyStatsCard } from '../components/home/MonthlyStatsCard';
 import { HomeEmptyState } from '../components/home/HomeEmptyState';
 import { MetersList } from '../components/home/MetersList';
+import { AdBanner } from '../components/AdBanner';
+import { AD_UNIT_IDS } from '../services/adsService';
 
 // Logging
 import { logger, loggers } from '../utils/logger';
@@ -239,6 +241,9 @@ export const HomeScreen = ({ navigation }) => {
       ) : (
         <HomeEmptyState onCreateMeter={handleCreateMeter} />
       )}
+
+      {/* Banner publicitario (solo usuarios FREE) */}
+      <AdBanner adUnitId={AD_UNIT_IDS.BANNER_HOME} />
     </SafeAreaView>
   );
 };

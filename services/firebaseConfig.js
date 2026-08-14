@@ -3,17 +3,18 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-// Configuración de Firebase
-// NOTA: En producción, considera usar expo-constants para variables de entorno
+// Configuración de Firebase desde variables de entorno
+// Las credenciales se cargan desde .env via app.config.js
 const firebaseConfig = {
-  apiKey: "AIzaSyBPaQNq8TKM6tGqAfX69ZA_OLx8SegQ52Y",
-  authDomain: "senergy-46b1e.firebaseapp.com",
-  projectId: "senergy-46b1e",
-  storageBucket: "senergy-46b1e.firebasestorage.app",
-  messagingSenderId: "1004118309867",
-  appId: "1:1004118309867:web:6385b378eb0217b009b7ae",
-  measurementId: "G-TRGG3EPHJ9",
+  apiKey: Constants.expoConfig?.extra?.firebaseApiKey,
+  authDomain: Constants.expoConfig?.extra?.firebaseAuthDomain,
+  projectId: Constants.expoConfig?.extra?.firebaseProjectId,
+  storageBucket: Constants.expoConfig?.extra?.firebaseStorageBucket,
+  messagingSenderId: Constants.expoConfig?.extra?.firebaseMessagingSenderId,
+  appId: Constants.expoConfig?.extra?.firebaseAppId,
+  measurementId: Constants.expoConfig?.extra?.firebaseMeasurementId,
 };
 
 const app = initializeApp(firebaseConfig);

@@ -20,6 +20,8 @@ import { SettingsSection } from '../components/SettingsSection';
 import { HelpSection } from '../components/HelpSection';
 import { SPACING, TYPOGRAPHY, RADIUS } from '../constants/theme';
 import Button from '../components/ui/Button';
+import { AdBanner } from '../components/AdBanner';
+import { AD_UNIT_IDS } from '../services/adsService';
 
 export const ProfileScreen = ({ navigation }) => {
   const { colors } = useDarkMode();
@@ -103,6 +105,9 @@ export const ProfileScreen = ({ navigation }) => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Banner publicitario (solo usuarios FREE) */}
+      <AdBanner adUnitId={AD_UNIT_IDS.BANNER_PROFILE} />
     </SafeAreaView>
   );
 };

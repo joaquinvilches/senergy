@@ -1,21 +1,6 @@
 # Términos y Condiciones de Uso - SENERGY
 
-**Última actualización:** [FECHA - Por ejemplo: 15 de diciembre de 2024]
-
----
-
-## INSTRUCCIONES PARA PERSONALIZAR ESTE DOCUMENTO
-
-**IMPORTANTE:** Este es un template que DEBES personalizar antes de lanzar. Busca y reemplaza los siguientes campos marcados con `[CORCHETES]`:
-
-- `[TU NOMBRE O NOMBRE DE TU EMPRESA]` - Ejemplo: "Juan Pérez" o "Energía Chile SpA"
-- `[TU RUT]` - Ejemplo: "12.345.678-9" (si eres empresa) o tu RUT personal
-- `[TU DIRECCIÓN]` - Ejemplo: "Av. Providencia 1234, Santiago, Chile"
-- `[TU EMAIL DE CONTACTO]` - Ejemplo: "contacto@senergy.cl"
-- `[TU TELÉFONO]` - Ejemplo: "+56 9 1234 5678" (opcional)
-- `[FECHA]` - La fecha de hoy o cuando publiques estos términos
-
-**Una vez personalizados, elimina esta sección de INSTRUCCIONES.**
+**Última actualización:** 20 de enero de 2026
 
 ---
 
@@ -23,7 +8,7 @@
 
 Bienvenido a SENERGY ("la Aplicación"). Al descargar, instalar o utilizar SENERGY, usted ("el Usuario") acepta estar sujeto a estos Términos y Condiciones ("Términos"). Si no está de acuerdo con estos Términos, no utilice la Aplicación.
 
-La Aplicación es operada por `[TU NOMBRE O NOMBRE DE TU EMPRESA]`, RUT `[TU RUT]`, con domicilio en `[TU DIRECCIÓN]` ("Nosotros", "Nuestro").
+La Aplicación es operada por Joaquin Alberto Vilches Montenegro, RUT 20.712.316-1, con domicilio en Villa Colonial Pasaje La Monarquía #573, El Monte, Chile ("Nosotros", "Nuestro").
 
 ## 2. Descripción del Servicio
 
@@ -33,25 +18,24 @@ SENERGY es una aplicación móvil diseñada para ayudar a usuarios en Chile a:
 - Registrar lecturas de consumo eléctrico
 - Calcular consumos y costos estimados
 - Visualizar estadísticas de consumo
-- Almacenar fotografías de medidores (solo usuarios Premium)
-- Exportar datos de consumo (solo usuarios Premium)
+- Captura de fotografías de medidores
+- Exportar datos de consumo a Excel
 
 La Aplicación se ofrece en dos planes:
 
 ### 2.1 Plan GRATUITO (FREE)
-- Registro de hasta 1 medidor
-- Hasta 20 lecturas mensuales
-- Estadísticas básicas
-- Sin captura de fotografías
-- Sin exportación de datos
-
-### 2.2 Plan PREMIUM
 - Medidores ilimitados
 - Lecturas ilimitadas
-- Estadísticas avanzadas
-- Captura de fotografías de medidores
-- Exportación de datos a Excel
-- Insights inteligentes de consumo
+- Captura de fotografías
+- Estadísticas avanzadas con gráficos
+- Exportación a Excel
+- **Incluye anuncios publicitarios** (Google AdMob)
+
+### 2.2 Plan PREMIUM
+- Todo lo del plan GRATUITO
+- **Sin anuncios**
+- Soporte prioritario
+- Acceso anticipado a nuevas funcionalidades
 
 **Costo Plan Premium:** $1.000 CLP (pesos chilenos) por mes.
 
@@ -84,11 +68,11 @@ El Usuario se compromete a:
 ### 5.1 Plan Premium
 - El Plan Premium se factura mensualmente por adelantado
 - El precio es de $1.000 CLP por mes (sujeto a cambios con 30 días de aviso)
-- Los pagos se procesan a través de [NOMBRE DE LA PASARELA - Ejemplo: Flow, Mercado Pago]
+- Los pagos se procesan manualmente por el momento (sistema en desarrollo)
 - Las suscripciones se renuevan automáticamente hasta que se cancelen
 
 ### 5.2 Cancelación
-- Puede cancelar su suscripción Premium en cualquier momento desde la Aplicación
+- Puede cancelar su suscripción Premium en cualquier momento contactándonos
 - La cancelación tendrá efecto al final del período de facturación actual
 - No se realizan reembolsos por períodos parciales
 
@@ -98,13 +82,13 @@ El Usuario se compromete a:
 
 ### 5.4 Política de Reembolsos
 - No se ofrecen reembolsos para suscripciones mensuales ya pagadas
-- En caso de problemas técnicos graves, puede solicitar un reembolso a `[TU EMAIL DE CONTACTO]`
+- En caso de problemas técnicos graves, puede solicitar un reembolso a joaquinpersonal4731@gmail.com
 - Los reembolsos se evaluarán caso por caso
 
 ## 6. Propiedad Intelectual
 
 ### 6.1 Propiedad de la Aplicación
-SENERGY, incluyendo su diseño, código, gráficos, logos y contenido, son propiedad exclusiva de `[TU NOMBRE O NOMBRE DE TU EMPRESA]` y están protegidos por las leyes de propiedad intelectual de Chile y tratados internacionales.
+SENERGY, incluyendo su diseño, código, gráficos, logos y contenido, son propiedad exclusiva de Joaquin Alberto Vilches Montenegro y están protegidos por las leyes de propiedad intelectual de Chile y tratados internacionales.
 
 ### 6.2 Licencia de Uso
 Se le otorga una licencia limitada, no exclusiva, no transferible y revocable para usar SENERGY únicamente para fines personales.
@@ -112,9 +96,25 @@ Se le otorga una licencia limitada, no exclusiva, no transferible y revocable pa
 ### 6.3 Propiedad de los Datos del Usuario
 Usted conserva la propiedad de todos los datos que ingrese en la Aplicación (lecturas, fotografías, notas). Nos otorga una licencia para almacenar y procesar estos datos únicamente para proporcionar el servicio.
 
-## 7. Limitación de Responsabilidad
+## 7. Publicidad (Plan GRATUITO)
 
-### 7.1 Precisión de los Cálculos
+### 7.1 Anuncios en Plan FREE
+Los usuarios del plan GRATUITO verán anuncios publicitarios proporcionados por Google AdMob. Estos anuncios nos permiten ofrecer el servicio de forma gratuita.
+
+### 7.2 Política de Anuncios
+- Los anuncios se muestran en ubicaciones específicas de la aplicación (Home, Stats, Profile)
+- No controlamos el contenido de los anuncios (proporcionados por Google)
+- Google AdMob puede recopilar datos según su propia política de privacidad
+- Puede eliminar anuncios completamente actualizando a Premium
+
+### 7.3 Derechos del Usuario
+- Puede desactivar la personalización de anuncios desde la configuración de su dispositivo
+- Puede actualizar a Premium en cualquier momento para eliminar anuncios
+- Vea nuestra Política de Privacidad para más detalles sobre Google AdMob
+
+## 8. Limitación de Responsabilidad
+
+### 8.1 Precisión de los Cálculos
 SENERGY proporciona **estimaciones** de consumo y costo eléctrico basadas en los datos que usted ingresa. **NO GARANTIZAMOS** la exactitud de estos cálculos. Los cálculos reales pueden variar según:
 - Tarifas reales de su compañía eléctrica
 - Impuestos y cargos adicionales
@@ -123,22 +123,22 @@ SENERGY proporciona **estimaciones** de consumo y costo eléctrico basadas en lo
 
 **Usted es responsable de verificar los cálculos con su factura eléctrica oficial.**
 
-### 7.2 Disponibilidad del Servicio
+### 8.2 Disponibilidad del Servicio
 Nos esforzamos por mantener SENERGY disponible 24/7, pero **NO GARANTIZAMOS** que el servicio estará libre de interrupciones, errores o que será completamente seguro.
 
-### 7.3 Exclusión de Garantías
+### 8.3 Exclusión de Garantías
 LA APLICACIÓN SE PROPORCIONA "TAL CUAL" Y "SEGÚN DISPONIBILIDAD", SIN GARANTÍAS DE NINGÚN TIPO, YA SEAN EXPRESAS O IMPLÍCITAS, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN PROPÓSITO PARTICULAR O NO INFRACCIÓN.
 
-### 7.4 Limitación de Daños
-EN LA MÁXIMA MEDIDA PERMITIDA POR LA LEY CHILENA, `[TU NOMBRE O NOMBRE DE TU EMPRESA]` NO SERÁ RESPONSABLE POR DAÑOS INDIRECTOS, INCIDENTALES, ESPECIALES, CONSECUENTES O PUNITIVOS, INCLUYENDO PÉRDIDA DE DATOS, BENEFICIOS O INGRESOS, RESULTANTES DEL USO O IMPOSIBILIDAD DE USO DE LA APLICACIÓN.
+### 8.4 Limitación de Daños
+EN LA MÁXIMA MEDIDA PERMITIDA POR LA LEY CHILENA, Joaquin Alberto Vilches Montenegro NO SERÁ RESPONSABLE POR DAÑOS INDIRECTOS, INCIDENTALES, ESPECIALES, CONSECUENTES O PUNITIVOS, INCLUYENDO PÉRDIDA DE DATOS, BENEFICIOS O INGRESOS, RESULTANTES DEL USO O IMPOSIBILIDAD DE USO DE LA APLICACIÓN.
 
-LA RESPONSABILIDAD TOTAL DE `[TU NOMBRE O NOMBRE DE TU EMPRESA]` NO EXCEDERÁ EL MONTO PAGADO POR USTED EN LOS ÚLTIMOS 12 MESES.
+LA RESPONSABILIDAD TOTAL DE Joaquin Alberto Vilches Montenegro NO EXCEDERÁ EL MONTO PAGADO POR USTED EN LOS ÚLTIMOS 12 MESES.
 
-## 8. Privacidad y Protección de Datos
+## 9. Privacidad y Protección de Datos
 
 Su privacidad es importante para nosotros. El uso de SENERGY también está sujeto a nuestra [Política de Privacidad](./POLITICA_DE_PRIVACIDAD.md), que forma parte integral de estos Términos.
 
-## 9. Modificaciones a los Términos
+## 10. Modificaciones a los Términos
 
 Nos reservamos el derecho de modificar estos Términos en cualquier momento. Los cambios entrarán en vigor al publicarse en la Aplicación. El uso continuado de SENERGY después de los cambios constituye su aceptación de los nuevos Términos.
 
@@ -146,41 +146,41 @@ Le notificaremos cambios materiales a través de:
 - Notificación in-app
 - Email a su dirección registrada
 
-## 10. Terminación
+## 11. Terminación
 
-### 10.1 Terminación por el Usuario
+### 11.1 Terminación por el Usuario
 Puede dejar de usar SENERGY en cualquier momento eliminando su cuenta desde la Aplicación.
 
-### 10.2 Terminación por Nuestra Parte
+### 11.2 Terminación por Nuestra Parte
 Podemos suspender o terminar su acceso a SENERGY inmediatamente, sin previo aviso, si:
 - Viola estos Términos
 - Utiliza la Aplicación de manera fraudulenta o ilegal
 - No paga las suscripciones adeudadas
 - Por cualquier otra razón a nuestra discreción
 
-### 10.3 Efectos de la Terminación
+### 11.3 Efectos de la Terminación
 Al terminar su cuenta:
 - Perderá acceso a todos sus datos almacenados en SENERGY
 - No tendrá derecho a reembolsos (excepto según la Política de Reembolsos)
 - Deberá dejar de usar la Aplicación inmediatamente
 
-## 11. Ley Aplicable y Jurisdicción
+## 12. Ley Aplicable y Jurisdicción
 
 Estos Términos se rigen por las leyes de la República de Chile.
 
-Cualquier disputa relacionada con estos Términos o el uso de SENERGY será resuelta por los tribunales ordinarios de justicia de Chile, específicamente los tribunales de `[TU CIUDAD - Ejemplo: Santiago]`.
+Cualquier disputa relacionada con estos Términos o el uso de SENERGY será resuelta por los tribunales ordinarios de justicia de Chile, específicamente los tribunales de Talagante.
 
-## 12. Divisibilidad
+## 13. Divisibilidad
 
 Si alguna disposición de estos Términos se considera inválida o inaplicable, las demás disposiciones permanecerán en pleno vigor y efecto.
 
-## 13. Contacto
+## 14. Contacto
 
 Si tiene preguntas sobre estos Términos, puede contactarnos en:
 
-- **Email:** `[TU EMAIL DE CONTACTO]`
-- **Teléfono:** `[TU TELÉFONO]` *(opcional)*
-- **Dirección:** `[TU DIRECCIÓN]`
+- **Email:** joaquinpersonal4731@gmail.com
+- **Teléfono:** +56 9 9773 9765
+- **Dirección:** Villa Colonial Pasaje La Monarquía #573, El Monte, Chile
 
 ---
 
@@ -190,7 +190,7 @@ Este resumen es solo para su conveniencia. El documento legal completo es el tex
 
 **Lo que puedes hacer:**
 ✅ Usar SENERGY para monitorear tu consumo eléctrico personal
-✅ Registrar medidores y lecturas
+✅ Registrar medidores y lecturas ilimitadas
 ✅ Cancelar tu suscripción Premium cuando quieras
 
 **Lo que NO puedes hacer:**
@@ -200,13 +200,13 @@ Este resumen es solo para su conveniencia. El documento legal completo es el tex
 
 **Importante saber:**
 💡 Los cálculos son estimaciones, verifica con tu factura real
-💡 Plan FREE: 1 medidor, 20 lecturas/mes
-💡 Plan PREMIUM: $1.000/mes, todo ilimitado
+💡 Plan FREE: Todo gratis pero con anuncios publicitarios
+💡 Plan PREMIUM: $1.000/mes, sin anuncios + beneficios extra
 💡 No hay reembolsos por meses parciales
 💡 Podemos cambiar los precios con 30 días de aviso
 
 ---
 
-**Última actualización:** `[FECHA]`
+**Última actualización:** 20 de enero de 2026
 
 **Versión:** 1.0

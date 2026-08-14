@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Guía de Lanzamiento — SENERGY</title>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 12pt;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 30px;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+    h1 { font-size: 26pt; color: #1B7D4A; border-bottom: 3px solid #1B7D4A; padding-bottom: 10px; }
+    h2 { font-size: 18pt; color: #1B7D4A; margin-top: 40px; border-left: 5px solid #1B7D4A; padding-left: 12px; }
+    h3 { font-size: 14pt; color: #374151; margin-top: 24px; }
+    .badge-urgente  { display:inline-block; background:#DC2626; color:#fff; font-size:10pt; font-weight:bold; padding:3px 10px; border-radius:4px; margin-left:8px; vertical-align:middle; }
+    .badge-opcional { display:inline-block; background:#D97706; color:#fff; font-size:10pt; font-weight:bold; padding:3px 10px; border-radius:4px; margin-left:8px; vertical-align:middle; }
+    .badge-ok       { display:inline-block; background:#059669; color:#fff; font-size:10pt; font-weight:bold; padding:3px 10px; border-radius:4px; margin-left:8px; vertical-align:middle; }
+    .step {
+      background: #F3F4F6;
+      border-left: 4px solid #1B7D4A;
+      padding: 14px 18px;
+      margin: 12px 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .step .num {
+      font-size: 16pt;
+      font-weight: bold;
+      color: #1B7D4A;
+      margin-right: 8px;
+    }
+    .step p { margin: 4px 0; }
+    code {
+      background: #1F2937;
+      color: #D1FAE5;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 11pt;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: block;
+      margin: 6px 0;
+      white-space: pre;
+    }
+    .aviso {
+      background: #FEF3C7;
+      border: 1px solid #F59E0B;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 14px 0;
+      font-size: 11pt;
+    }
+    .aviso-rojo {
+      background: #FEE2E2;
+      border: 1px solid #DC2626;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 14px 0;
+      font-size: 11pt;
+    }
+    .aviso-verde {
+      background: #D1FAE5;
+      border: 1px solid #059669;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 14px 0;
+      font-size: 11pt;
+    }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 11pt; }
+    th { background: #1B7D4A; color: white; padding: 10px 14px; text-align: left; }
+    td { padding: 9px 14px; border-bottom: 1px solid #E5E7EB; }
+    tr:nth-child(even) td { background: #F9FAFB; }
+    .indice { background: #F0FDF4; border: 1px solid #A7F3D0; padding: 20px 28px; border-radius: 8px; margin-bottom: 30px; }
+    .indice li { margin: 6px 0; }
+    .indice a { color: #1B7D4A; text-decoration: none; font-weight: 500; }
+    .indice a:hover { text-decoration: underline; }
+    .resumen-tabla td:first-child { font-weight: bold; }
+    hr { border: none; border-top: 1px solid #E5E7EB; margin: 30px 0; }
+    .pie { text-align:center; color:#6B7280; font-size:10pt; margin-top:50px; padding-top:20px; border-top: 1px solid #E5E7EB; }
+  </style>
+</head>
+<body>
+
+<h1>Guía de Lanzamiento — SENERGY</h1>
+<p style="color:#6B7280; font-size:11pt;">Generada el 17 de junio de 2026 &nbsp;|&nbsp; Para uso personal del desarrollador</p>
+
+<div class="aviso-verde">
+  <strong>Estado actual:</strong> La app fue auditada y se aplicaron correcciones automáticas. Esta guía cubre únicamente las tareas que <strong>necesitas hacer tú</strong> (en sitios web, consolas, o terminal).
+</div>
+
+<!-- ÍNDICE -->
+<div class="indice">
+  <strong>Contenido de esta guía</strong>
+  <ol>
+    <li><a href="#seccion1">Tarea 1 — Configurar credenciales secretas de Firebase (EAS Secrets)</a> <span class="badge-urgente">URGENTE</span></li>
+    <li><a href="#seccion2">Tarea 2 — Crear tu App iOS en Google AdMob</a> <span class="badge-urgente">URGENTE</span></li>
+    <li><a href="#seccion3">Tarea 3 — Implementar sistema de pagos real (RevenueCat)</a> <span class="badge-urgente">URGENTE</span></li>
+    <li><a href="#seccion4">Tarea 4 — Preparar Google Play Console y Apple App Store</a> <span class="badge-opcional">ANTES DEL BUILD</span></li>
+    <li><a href="#seccion5">Resumen final y orden de tareas</a></li>
+  </ol>
+</div>
+
+<div class="aviso-rojo">
+  <strong>&#9888; Importante antes de empezar:</strong> Todas las tareas de esta sección requieren que tengas instalado <strong>Node.js</strong> y el <strong>EAS CLI</strong>. Si no los tienes, sigue primero los pasos de la Tarea 1 (Preparación).
+</div>
+
+<hr />
+
+<!-- =========================================================== -->
+<h2 id="seccion1">Tarea 1 — Configurar credenciales secretas (EAS Secrets) <span class="badge-urgente">URGENTE</span></h2>
+
+<p><strong>¿Por qué hay que hacer esto?</strong><br/>
+Tu app necesita conectarse a Firebase (base de datos) y Cloudinary (fotos) usando unas "contraseñas" llamadas API Keys. Antes estaban escritas directamente en el código (lo cual era un riesgo de seguridad). Las movimos a un sistema seguro llamado <strong>EAS Secrets</strong>, que las guarda encriptadas en los servidores de Expo. Ahora tienes que "cargarlas" ahí.</p>
+
+<h3>Paso 1 — Abrir la terminal</h3>
+<div class="step">
+  <span class="num">1</span>
+  <p>En Windows, presiona <strong>Windows + R</strong>, escribe <code style="display:inline; padding:2px 6px;">cmd</code> y presiona Enter.</p>
+  <p>O abre <strong>Visual Studio Code</strong>, ve al menú superior → Terminal → New Terminal.</p>
+</div>
+
+<h3>Paso 2 — Ir a la carpeta del proyecto</h3>
+<div class="step">
+  <span class="num">2</span>
+  <p>En la terminal, escribe exactamente este comando y presiona Enter:</p>
+  <code>cd "C:\Users\JOAQUIN\Desktop\SENERGY-17-10\SENERGY"</code>
+  <p>Verás que el "prompt" cambia y muestra la ruta de tu proyecto. Eso significa que estás en la carpeta correcta.</p>
+</div>
+
+<h3>Paso 3 — Instalar EAS CLI (solo la primera vez)</h3>
+<div class="step">
+  <span class="num">3</span>
+  <p>Copia y pega este comando, luego presiona Enter:</p>
+  <code>npm install -g eas-cli</code>
+  <p>Espera a que termine (puede tomar 1-2 minutos). Verás mucho texto en la pantalla, eso es normal.</p>
+</div>
+
+<h3>Paso 4 — Iniciar sesión en Expo</h3>
+<div class="step">
+  <span class="num">4</span>
+  <p>Escribe este comando y presiona Enter:</p>
+  <code>eas login</code>
+  <p>Te pedirá tu email y contraseña de <strong>expo.dev</strong>. Escríbelos y presiona Enter en cada uno.</p>
+  <p>Si no tienes cuenta, créala gratis en <strong>https://expo.dev</strong> antes de continuar.</p>
+</div>
+
+<h3>Paso 5 — Cargar las credenciales una por una</h3>
+<p>Copia y pega cada comando abajo en la terminal. En cada uno te preguntará si quieres continuar — escribe <strong>Y</strong> y presiona Enter.</p>
+
+<div class="aviso">
+  <strong>&#128161; Consejo:</strong> Puedes encontrar los valores reales de estas variables abriendo el archivo <strong>.env</strong> que está en la carpeta del proyecto. Ábrelo con el Bloc de Notas.
+</div>
+
+<div class="step">
+  <p>Credencial 1 — Firebase API Key:</p>
+  <code>eas secret:create --scope project --name FIREBASE_API_KEY --value "(ver .env)"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 2 — Firebase Auth Domain:</p>
+  <code>eas secret:create --scope project --name FIREBASE_AUTH_DOMAIN --value "senergy-46b1e.firebaseapp.com"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 3 — Firebase Project ID:</p>
+  <code>eas secret:create --scope project --name FIREBASE_PROJECT_ID --value "senergy-46b1e"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 4 — Firebase Storage Bucket:</p>
+  <code>eas secret:create --scope project --name FIREBASE_STORAGE_BUCKET --value "senergy-46b1e.firebasestorage.app"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 5 — Firebase Messaging Sender ID:</p>
+  <code>eas secret:create --scope project --name FIREBASE_MESSAGING_SENDER_ID --value "1004118309867"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 6 — Firebase App ID:</p>
+  <code>eas secret:create --scope project --name FIREBASE_APP_ID --value "1:1004118309867:web:6385b378eb0217b009b7ae"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 7 — Firebase Measurement ID:</p>
+  <code>eas secret:create --scope project --name FIREBASE_MEASUREMENT_ID --value "G-TRGG3EPHJ9"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 8 — Cloudinary Cloud Name:</p>
+  <code>eas secret:create --scope project --name CLOUDINARY_CLOUD_NAME --value "dinxnxpn4"</code>
+</div>
+
+<div class="step">
+  <p>Credencial 9 — Cloudinary Upload Preset:</p>
+  <code>eas secret:create --scope project --name CLOUDINARY_UPLOAD_PRESET --value "senergy_unsigned"</code>
+</div>
+
+<h3>Paso 6 — Verificar que se cargaron correctamente</h3>
+<div class="step">
+  <span class="num">6</span>
+  <p>Escribe este comando para ver la lista de secrets cargados:</p>
+  <code>eas secret:list</code>
+  <p>Deberías ver las 9 credenciales que acabas de cargar. Si aparecen todas, ¡esta tarea está completa!</p>
+</div>
+
+<div class="aviso-verde">
+  <strong>&#10003; Tarea 1 completada.</strong> Las credenciales están seguras en los servidores de Expo y se inyectarán automáticamente en cada build de producción.
+</div>
+
+<hr />
+
+<!-- =========================================================== -->
+<h2 id="seccion2">Tarea 2 — Crear tu App iOS en Google AdMob <span class="badge-urgente">URGENTE</span></h2>
+
+<p><strong>¿Por qué hay que hacer esto?</strong><br/>
+SENERGY muestra anuncios a los usuarios del plan gratuito. Para iOS (iPhone/iPad), Google AdMob requiere registrar tu app y te da un <em>App ID</em> único. Sin él, la app no pasará la revisión de Apple.</p>
+
+<div class="aviso">
+  <strong>Nota:</strong> Si por ahora solo vas a lanzar en Android, puedes saltarte esta tarea y hacerla cuando estés listo para iOS.
+</div>
+
+<h3>Paso 1 — Ir a la consola de AdMob</h3>
+<div class="step">
+  <span class="num">1</span>
+  <p>Abre tu navegador y ve a: <strong>https://admob.google.com</strong></p>
+  <p>Inicia sesión con la misma cuenta de Google que usaste para crear el proyecto de AdMob Android (<em>ca-app-pub-4937459209805273</em>).</p>
+</div>
+
+<h3>Paso 2 — Agregar nueva app</h3>
+<div class="step">
+  <span class="num">2</span>
+  <p>En el menú de la izquierda, haz clic en <strong>"Aplicaciones"</strong>.</p>
+  <p>Luego haz clic en el botón azul <strong>"Agregar aplicación"</strong>.</p>
+</div>
+
+<h3>Paso 3 — Configurar la app iOS</h3>
+<div class="step">
+  <span class="num">3</span>
+  <p>Selecciona la plataforma: <strong>iOS</strong></p>
+  <p>Cuando te pregunte si la app está en el App Store, selecciona <strong>"No"</strong> (todavía no la hemos publicado).</p>
+  <p>Nombre de la app: escribe <strong>SENERGY</strong></p>
+  <p>Haz clic en <strong>"Agregar app"</strong>.</p>
+</div>
+
+<h3>Paso 4 — Copiar el App ID</h3>
+<div class="step">
+  <span class="num">4</span>
+  <p>AdMob te mostrará un <strong>ID de aplicación</strong> con este formato:</p>
+  <code>ca-app-pub-4937459209805273~XXXXXXXXXX</code>
+  <p>Copia ese número completo (incluida la parte <em>ca-app-pub-...</em>).</p>
+</div>
+
+<h3>Paso 5 — Guardarlo como EAS Secret</h3>
+<div class="step">
+  <span class="num">5</span>
+  <p>Abre la terminal (como en la Tarea 1) y ejecuta este comando, reemplazando <strong>PEGAR_TU_ID_AQUI</strong> con el ID que copiaste:</p>
+  <code>eas secret:create --scope project --name IOS_ADMOB_APP_ID --value "PEGAR_TU_ID_AQUI"</code>
+</div>
+
+<div class="aviso-verde">
+  <strong>&#10003; Tarea 2 completada.</strong> Los builds de iOS ya usarán tu ID real de AdMob.
+</div>
+
+<hr />
+
+<!-- =========================================================== -->
+<h2 id="seccion3">Tarea 3 — Implementar sistema de pagos real (RevenueCat) <span class="badge-urgente">URGENTE</span></h2>
+
+<p><strong>¿Por qué hay que hacer esto?</strong><br/>
+Actualmente, cuando alguien presiona "Activar Premium" en la app, simplemente se activa sin cobrarle nada. Para cobrar el plan de $1.000 CLP/mes de verdad, necesitas un sistema de pagos. La solución más simple para Expo es <strong>RevenueCat</strong>, que actúa como intermediario entre tu app y las tiendas (Apple / Google).</p>
+
+<div class="aviso">
+  <strong>Esta tarea tiene dos partes:</strong><br/>
+  &nbsp;&nbsp;&nbsp;— <strong>Parte A:</strong> Tú configuras cuentas en sitios web (lo haces solo).<br/>
+  &nbsp;&nbsp;&nbsp;— <strong>Parte B:</strong> Claude hace los cambios en el código (pídelo cuando termines la Parte A).
+</div>
+
+<h3>Parte A — Lo que haces tú</h3>
+
+<h3>Paso 1 — Crear cuenta en RevenueCat</h3>
+<div class="step">
+  <span class="num">1</span>
+  <p>Ve a <strong>https://www.revenuecat.com</strong> y haz clic en <strong>"Get Started Free"</strong>.</p>
+  <p>Regístrate con tu email. El plan gratuito incluye hasta $2.500 USD/mes de ingresos sin comisiones adicionales de RevenueCat (las tiendas siempre cobran 15-30%).</p>
+</div>
+
+<h3>Paso 2 — Crear un proyecto en RevenueCat</h3>
+<div class="step">
+  <span class="num">2</span>
+  <p>Después de registrarte, haz clic en <strong>"Create new project"</strong>.</p>
+  <p>Nombre: <strong>SENERGY</strong></p>
+  <p>Luego agrega las dos plataformas:</p>
+  <p>&nbsp;&nbsp;• Haz clic en <strong>"+ Add app"</strong> → selecciona <strong>Google Play Store</strong></p>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;- Package name: <code style="display:inline; padding:2px 6px;">com.energysaver.senergy</code></p>
+  <p>&nbsp;&nbsp;• Haz clic en <strong>"+ Add app"</strong> → selecciona <strong>App Store</strong></p>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;- Bundle ID: <code style="display:inline; padding:2px 6px;">com.energysaver.senergy</code></p>
+</div>
+
+<h3>Paso 3 — Copiar tu API Key de RevenueCat</h3>
+<div class="step">
+  <span class="num">3</span>
+  <p>Dentro de tu proyecto en RevenueCat, ve a <strong>Project Settings → API Keys</strong>.</p>
+  <p>Verás dos claves públicas (una para Android, una para iOS). Cópialas, las vas a necesitar.</p>
+  <p>Formato: <code style="display:inline; padding:2px 6px;">appl_XXXXXXXXXXXXXXXX</code> (iOS) y <code style="display:inline; padding:2px 6px;">goog_XXXXXXXXXXXXXXXX</code> (Android)</p>
+</div>
+
+<h3>Paso 4 — Crear el producto en Google Play Console</h3>
+<div class="step">
+  <span class="num">4</span>
+  <p>Ve a <strong>https://play.google.com/console</strong> e ingresa con tu cuenta de Google Play Developer.</p>
+  <p>Selecciona tu app SENERGY → en el menú izquierdo busca <strong>"Monetización" → "Suscripciones"</strong>.</p>
+  <p>Haz clic en <strong>"Crear suscripción"</strong> y configura:</p>
+  <p>&nbsp;&nbsp;• ID del producto: <code style="display:inline; padding:2px 6px;">senergy_premium_monthly</code></p>
+  <p>&nbsp;&nbsp;• Nombre: <strong>SENERGY Premium</strong></p>
+  <p>&nbsp;&nbsp;• Período de facturación: <strong>Mensual</strong></p>
+  <p>&nbsp;&nbsp;• Precio: <strong>$1.090 CLP</strong> (Google cobra comisión, así el usuario ve ~$1.000)</p>
+</div>
+
+<h3>Paso 5 — Crear el producto en App Store Connect (si tienes cuenta de Apple Developer)</h3>
+<div class="step">
+  <span class="num">5</span>
+  <p>Ve a <strong>https://appstoreconnect.apple.com</strong> e ingresa con tu Apple ID.</p>
+  <p>Selecciona tu app → <strong>"Monetización" → "Suscripciones"</strong>.</p>
+  <p>Crea un grupo de suscripción llamado <strong>"Premium"</strong> y agrega:</p>
+  <p>&nbsp;&nbsp;• Nombre de referencia: <strong>SENERGY Premium Mensual</strong></p>
+  <p>&nbsp;&nbsp;• ID del producto: <code style="display:inline; padding:2px 6px;">com.energysaver.senergy.premium.monthly</code></p>
+  <p>&nbsp;&nbsp;• Duración: <strong>1 mes</strong></p>
+  <p>&nbsp;&nbsp;• Precio: elige la franja más cercana a $1.000 CLP (Apple usa franjas fijas)</p>
+</div>
+
+<h3>Paso 6 — Conectar productos en RevenueCat</h3>
+<div class="step">
+  <span class="num">6</span>
+  <p>Vuelve a RevenueCat → <strong>Products</strong> → <strong>"+ New Product"</strong>.</p>
+  <p>Agrega el ID que usaste en Google Play: <code style="display:inline; padding:2px 6px;">senergy_premium_monthly</code></p>
+  <p>Repite para el ID de Apple si lo creaste.</p>
+  <p>Luego ve a <strong>Entitlements</strong> → <strong>"+ New Entitlement"</strong>:</p>
+  <p>&nbsp;&nbsp;• ID: <code style="display:inline; padding:2px 6px;">premium</code></p>
+  <p>&nbsp;&nbsp;• Asocia los productos que acabas de crear.</p>
+</div>
+
+<h3>Parte B — Lo que hace Claude (cuando termines la Parte A)</h3>
+<div class="aviso-verde">
+  Cuando hayas completado todos los pasos de la Parte A, dile a Claude:<br/><br/>
+  <em>"Tengo lista la cuenta de RevenueCat. Mi API Key de Android es [CLAVE] y la de iOS es [CLAVE]. Implementa el sistema de pagos en SENERGY."</em><br/><br/>
+  Claude instalará el SDK de RevenueCat y actualizará <code style="display:inline; padding:2px 6px;">PricingScreen.js</code> para cobrar de verdad.
+</div>
+
+<hr />
+
+<!-- =========================================================== -->
+<h2 id="seccion4">Tarea 4 — Preparar las cuentas de las tiendas <span class="badge-opcional">ANTES DEL BUILD</span></h2>
+
+<h3>Google Play Console</h3>
+<div class="step">
+  <p>Necesitas una <strong>cuenta de Google Play Developer</strong> ($25 USD, pago único).</p>
+  <p>Crea la app en: <strong>https://play.google.com/console</strong></p>
+  <p>Package name: <code style="display:inline; padding:2px 6px;">com.energysaver.senergy</code></p>
+  <p>Descarga la <strong>Service Account Key</strong> para el submit automático:</p>
+  <p>&nbsp;&nbsp;1. En Google Play Console → Configuración → Acceso API</p>
+  <p>&nbsp;&nbsp;2. Vincula con Google Cloud → Crea cuenta de servicio</p>
+  <p>&nbsp;&nbsp;3. Descarga el archivo JSON → Renómbralo a <code style="display:inline; padding:2px 6px;">google-play-key.json</code></p>
+  <p>&nbsp;&nbsp;4. Colócalo en la carpeta raíz del proyecto SENERGY</p>
+</div>
+
+<h3>Apple App Store Connect (solo si vas a publicar en iOS)</h3>
+<div class="step">
+  <p>Necesitas una <strong>cuenta de Apple Developer</strong> ($99 USD/año).</p>
+  <p>Crea la app en: <strong>https://appstoreconnect.apple.com</strong></p>
+  <p>Bundle ID: <code style="display:inline; padding:2px 6px;">com.energysaver.senergy</code></p>
+</div>
+
+<hr />
+
+<!-- =========================================================== -->
+<h2 id="seccion5">Resumen final — Orden de tareas</h2>
+
+<table>
+  <tr>
+    <th>#</th>
+    <th>Tarea</th>
+    <th>Quién lo hace</th>
+    <th>Estado</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Aplicar correcciones automáticas al código</td>
+    <td>Claude (ya hecho)</td>
+    <td style="color:#059669; font-weight:bold;">&#10003; Completado</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Configurar EAS Secrets (Firebase + Cloudinary)</td>
+    <td>Tú — Tarea 1 de esta guía</td>
+    <td style="color:#D97706; font-weight:bold;">Pendiente</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Crear App iOS en AdMob Console</td>
+    <td>Tú — Tarea 2 de esta guía</td>
+    <td style="color:#D97706; font-weight:bold;">Pendiente</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Configurar RevenueCat (cuentas y productos)</td>
+    <td>Tú — Tarea 3 Parte A</td>
+    <td style="color:#D97706; font-weight:bold;">Pendiente</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Implementar RevenueCat en el código</td>
+    <td>Claude — Tarea 3 Parte B</td>
+    <td style="color:#D97706; font-weight:bold;">Pendiente (espera Tarea 4)</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Crear apps en Google Play Console y App Store</td>
+    <td>Tú — Tarea 4 de esta guía</td>
+    <td style="color:#D97706; font-weight:bold;">Pendiente</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>Hacer el primer build de producción</td>
+    <td>Tú (1 comando) + Claude te guía</td>
+    <td style="color:#6B7280;">Después de todo lo anterior</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>Subir a las tiendas y publicar</td>
+    <td>Tú + Claude te guía</td>
+    <td style="color:#6B7280;">Último paso</td>
+  </tr>
+</table>
+
+<div class="aviso-verde">
+  <strong>&#128640; Cuando termines las Tareas 1, 2 y 3A,</strong> vuelve con Claude y escribe:<br/>
+  <em>"Terminé de configurar EAS Secrets y RevenueCat. Ya tenemos los API Keys. Continuemos con los pagos."</em>
+</div>
+
+<div class="aviso">
+  <strong>&#128241; Para hacer el primer build</strong> (cuando todo esté listo), solo necesitas ejecutar estos comandos en la terminal:<br/>
+  <code>eas build --platform android --profile production</code>
+  <p style="margin:4px 0 0 0; font-size:11pt;">O para ambas plataformas a la vez:</p>
+  <code>eas build --platform all --profile production</code>
+</div>
+
+<div class="pie">
+  Guía generada por Claude Code &nbsp;|&nbsp; Proyecto SENERGY &nbsp;|&nbsp; 17 de junio de 2026
+</div>
+
+</body>
+</html>

@@ -234,9 +234,12 @@ export const RegisterMeterScreen = ({ navigation }) => {
                   selectedValue={selectedRegion}
                   onValueChange={setSelectedRegion}
                   enabled={!loading}
+                  style={{ color: colors.TEXT_DARK }}
+                  dropdownIconColor={colors.TEXT_DARK}
+                  itemStyle={{ color: colors.TEXT_DARK }}
                 >
                   {Object.values(REGIONS).map((region) => (
-                    <Picker.Item key={region} label={region} value={region} />
+                    <Picker.Item key={region} label={region} value={region} color={colors.TEXT_DARK} />
                   ))}
                 </Picker>
               </View>
@@ -258,12 +261,16 @@ export const RegisterMeterScreen = ({ navigation }) => {
                   selectedValue={selectedCompanyKey}
                   onValueChange={setSelectedCompanyKey}
                   enabled={!loading}
+                  style={{ color: colors.TEXT_DARK }}
+                  dropdownIconColor={colors.TEXT_DARK}
+                  itemStyle={{ color: colors.TEXT_DARK }}
                 >
                   {companiesForRegion.map((company) => (
                     <Picker.Item
                       key={company.key}
                       label={company.name}
                       value={company.key}
+                      color={colors.TEXT_DARK}
                     />
                   ))}
                 </Picker>

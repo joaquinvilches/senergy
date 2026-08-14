@@ -1,27 +1,12 @@
 # Política de Privacidad - SENERGY
 
-**Última actualización:** [FECHA - Por ejemplo: 15 de diciembre de 2024]
-
----
-
-## INSTRUCCIONES PARA PERSONALIZAR ESTE DOCUMENTO
-
-**IMPORTANTE:** Este es un template que DEBES personalizar antes de lanzar. Busca y reemplaza los siguientes campos marcados con `[CORCHETES]`:
-
-- `[TU NOMBRE O NOMBRE DE TU EMPRESA]` - Ejemplo: "Juan Pérez" o "Energía Chile SpA"
-- `[TU RUT]` - Ejemplo: "12.345.678-9"
-- `[TU DIRECCIÓN]` - Ejemplo: "Av. Providencia 1234, Santiago, Chile"
-- `[TU EMAIL DE CONTACTO]` - Ejemplo: "contacto@senergy.cl" o "privacidad@senergy.cl"
-- `[TU TELÉFONO]` - Ejemplo: "+56 9 1234 5678" (opcional)
-- `[FECHA]` - La fecha de hoy o cuando publiques esta política
-
-**Una vez personalizados, elimina esta sección de INSTRUCCIONES.**
+**Última actualización:** 20 de enero de 2026
 
 ---
 
 ## 1. Introducción
 
-En `[TU NOMBRE O NOMBRE DE TU EMPRESA]` ("Nosotros", "Nuestro"), operadores de la aplicación SENERGY ("la Aplicación"), nos comprometemos a proteger la privacidad y los datos personales de nuestros usuarios ("Usted", "Usuario").
+En Joaquin Alberto Vilches Montenegro ("Nosotros", "Nuestro"), operadores de la aplicación SENERGY ("la Aplicación"), nos comprometemos a proteger la privacidad y los datos personales de nuestros usuarios ("Usted", "Usuario").
 
 Esta Política de Privacidad describe:
 - Qué datos personales recopilamos
@@ -40,11 +25,11 @@ Esta política cumple con:
 ## 2. Responsable del Tratamiento de Datos
 
 **Responsable:**
-- Nombre: `[TU NOMBRE O NOMBRE DE TU EMPRESA]`
-- RUT: `[TU RUT]`
-- Dirección: `[TU DIRECCIÓN]`
-- Email de contacto: `[TU EMAIL DE CONTACTO]`
-- Teléfono: `[TU TELÉFONO]`
+- Nombre: Joaquin Alberto Vilches Montenegro
+- RUT: 20.712.316-1
+- Dirección: Villa Colonial Pasaje La Monarquía #573, El Monte, Chile
+- Email de contacto: joaquinpersonal4731@gmail.com
+- Teléfono: +56 9 9773 9765
 
 ## 3. Datos Personales que Recopilamos
 
@@ -171,13 +156,6 @@ Compartimos datos solo en las siguientes circunstancias limitadas:
 - **Política de privacidad:** https://cloudinary.com/privacy
 - **Garantías:** Cloudinary cumple con GDPR
 
-**[NOMBRE DE PASARELA DE PAGOS] (Procesamiento de Pagos)**
-- **Qué datos:** Datos de pago (tarjeta, email)
-- **Propósito:** Procesar suscripciones Premium
-- **Ubicación:** `[UBICACIÓN DEL PROVEEDOR]`
-- **Política de privacidad:** `[URL DE POLÍTICA]`
-- **Garantías:** Certificado PCI-DSS
-
 ### 6.2 Autoridades Legales
 
 Podemos divulgar sus datos si:
@@ -197,6 +175,56 @@ Para transferencias fuera de Chile, utilizamos:
 - Garantías de seguridad equivalentes a las requeridas en Chile
 
 **Usted tiene derecho a obtener información sobre las garantías aplicables contactándonos.**
+
+### 6.4 Google AdMob (Publicidad)
+
+**IMPORTANTE:** SENERGY muestra anuncios a usuarios del plan GRATUITO mediante Google AdMob.
+
+**Google AdMob (Publicidad para usuarios FREE)**
+- **Qué datos:** Google AdMob puede recopilar:
+  - ID de publicidad del dispositivo (IDFA en iOS, AAID en Android)
+  - Dirección IP
+  - Información del dispositivo (modelo, sistema operativo, versión)
+  - Datos de uso de la aplicación
+  - Datos de ubicación aproximada (basada en IP)
+  - Identificadores de anuncios
+  - Historial de interacción con anuncios
+
+- **Propósito:**
+  - Mostrar anuncios personalizados
+  - Medir rendimiento de anuncios
+  - Prevenir fraude publicitario
+  - Optimizar la experiencia publicitaria
+
+- **Base legal:** Consentimiento e interés legítimo (monetización del servicio gratuito)
+
+- **Ubicación:** Servidores de Google (global, incluye EE.UU.)
+
+- **Política de privacidad de Google:** https://policies.google.com/privacy
+
+- **Política de AdMob:** https://support.google.com/admob/answer/6128543
+
+- **Control del usuario:**
+  - **Usuarios Premium NO ven anuncios** y AdMob no recopila datos
+  - Usuarios FREE pueden optar por no recibir anuncios personalizados desde:
+    - **iOS:** Configuración → Privacidad → Apple Advertising → Desactivar "Anuncios personalizados"
+    - **Android:** Configuración → Google → Anuncios → Desactivar "Personalización de anuncios"
+  - Puede actualizar a Premium en cualquier momento para eliminar anuncios completamente
+
+**Socios publicitarios de Google AdMob:**
+Google puede compartir datos con redes publicitarias asociadas para optimizar anuncios. La lista completa está disponible en:
+https://support.google.com/admob/answer/9012903
+
+**Tecnologías de rastreo publicitario:**
+- Identificadores de publicidad (reseteables desde configuración del dispositivo)
+- Cookies (solo en webviews de anuncios, no en la app principal)
+- SDKs de terceros integrados por Google AdMob
+
+**Sus derechos con respecto a publicidad:**
+✅ Desactivar personalización de anuncios (seguirá viendo anuncios genéricos)
+✅ Resetear su ID de publicidad desde configuración del dispositivo
+✅ Actualizar a Premium para eliminar anuncios por completo
+✅ Solicitar información sobre datos recopilados por AdMob contactándonos
 
 ## 7. Retención de Datos
 
@@ -255,7 +283,7 @@ Usted tiene los siguientes derechos sobre sus datos personales:
 ### 9.1 Derecho de Acceso
 Puede solicitar una copia de todos los datos personales que tenemos sobre usted.
 
-**Cómo ejercerlo:** Envíe un email a `[TU EMAIL DE CONTACTO]` con el asunto "Solicitud de Acceso a Datos"
+**Cómo ejercerlo:** Envíe un email a joaquinpersonal4731@gmail.com con el asunto "Solicitud de Acceso a Datos"
 
 ### 9.2 Derecho de Rectificación
 Puede corregir datos inexactos o incompletos.
@@ -274,7 +302,7 @@ Puede solicitar la eliminación de sus datos.
 ### 9.4 Derecho de Oposición
 Puede oponerse al procesamiento de sus datos para ciertos propósitos (ej. marketing).
 
-**Cómo ejercerlo:** Contactarnos a `[TU EMAIL DE CONTACTO]`
+**Cómo ejercerlo:** Contactarnos a joaquinpersonal4731@gmail.com
 
 ### 9.5 Derecho de Portabilidad
 Puede solicitar sus datos en un formato estructurado y legible por máquina.
@@ -284,7 +312,7 @@ Puede solicitar sus datos en un formato estructurado y legible por máquina.
 ### 9.6 Derecho de Limitación del Tratamiento
 Puede solicitar limitar el procesamiento de sus datos en ciertas circunstancias.
 
-**Cómo ejercerlo:** Contactarnos a `[TU EMAIL DE CONTACTO]`
+**Cómo ejercerlo:** Contactarnos a joaquinpersonal4731@gmail.com
 
 ### 9.7 Derecho a Revocar Consentimiento
 Puede revocar su consentimiento en cualquier momento.
@@ -314,7 +342,7 @@ SENERGY está destinada a personas mayores de **18 años**.
 
 Si descubrimos que un menor ha proporcionado datos personales, eliminaremos su cuenta inmediatamente.
 
-Si usted es padre/madre/tutor y cree que su hijo menor ha creado una cuenta, contacte a `[TU EMAIL DE CONTACTO]`.
+Si usted es padre/madre/tutor y cree que su hijo menor ha creado una cuenta, contacte a joaquinpersonal4731@gmail.com.
 
 ## 11. Cookies y Tecnologías de Rastreo
 
@@ -360,9 +388,9 @@ Podemos actualizar esta Política de Privacidad periódicamente.
 Si tiene preguntas sobre esta Política de Privacidad o sobre cómo manejamos sus datos, contáctenos:
 
 **Responsable de Protección de Datos:**
-- Email: `[TU EMAIL DE CONTACTO]`
-- Teléfono: `[TU TELÉFONO]`
-- Dirección: `[TU DIRECCIÓN]`
+- Email: joaquinpersonal4731@gmail.com
+- Teléfono: +56 9 9773 9765
+- Dirección: Villa Colonial Pasaje La Monarquía #573, El Monte, Chile
 
 **Tiempo de respuesta:** Responderemos dentro de 5 días hábiles.
 
@@ -381,7 +409,8 @@ Este resumen es solo para su conveniencia. El documento legal completo es el tex
 ✅ Procesar pagos (Premium)
 
 ### ¿Con quién compartimos?
-👥 Solo con proveedores técnicos necesarios (Firebase, Cloudinary)
+👥 Solo con proveedores técnicos necesarios (Firebase, Cloudinary, Google AdMob)
+📢 Google AdMob (solo usuarios FREE) - para mostrar anuncios
 ❌ NUNCA vendemos sus datos
 
 ### ¿Dónde se almacenan?
@@ -398,6 +427,7 @@ Este resumen es solo para su conveniencia. El documento legal completo es el tex
 ✅ Eliminar su cuenta en cualquier momento
 ✅ Exportar sus datos
 ✅ Presentar reclamo ante autoridades
+✅ Desactivar anuncios personalizados o actualizar a Premium (sin anuncios)
 
 ### Seguridad:
 🔒 Encriptación de datos
@@ -405,13 +435,13 @@ Este resumen es solo para su conveniencia. El documento legal completo es el tex
 🛡️ Firebase Security Rules
 
 ### Contacto:
-📩 `[TU EMAIL DE CONTACTO]`
+📩 joaquinpersonal4731@gmail.com
 
 ---
 
-**Última actualización:** `[FECHA]`
+**Última actualización:** 20 de enero de 2026
 
-**Versión:** 1.0
+**Versión:** 1.1
 
 ---
 

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sesión 18 de junio 2026 — SENERGY</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 12pt; max-width: 950px; margin: 40px auto; padding: 0 30px; color: #1a1a1a; line-height: 1.6; }
+    h1 { font-size: 24pt; color: #1B7D4A; border-bottom: 3px solid #1B7D4A; padding-bottom: 10px; }
+    h2 { font-size: 16pt; color: #1B7D4A; margin-top: 36px; border-left: 5px solid #1B7D4A; padding-left: 12px; }
+    h3 { font-size: 13pt; color: #374151; margin-top: 20px; }
+    .hecho   { color: #059669; font-weight: bold; }
+    .pending { color: #D97706; font-weight: bold; }
+    .critico { color: #DC2626; font-weight: bold; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 11pt; }
+    th { background: #1B7D4A; color: white; padding: 9px 14px; text-align: left; }
+    td { padding: 8px 14px; border-bottom: 1px solid #E5E7EB; vertical-align: top; }
+    tr:nth-child(even) td { background: #F9FAFB; }
+    code { background: #1F2937; color: #D1FAE5; font-family: Consolas, monospace; font-size: 10.5pt; padding: 2px 7px; border-radius: 4px; }
+    .caja-verde  { background: #D1FAE5; border: 1px solid #059669; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }
+    .caja-naranja{ background: #FEF3C7; border: 1px solid #F59E0B; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }
+    .caja-roja   { background: #FEE2E2; border: 1px solid #DC2626; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }
+    .caja-gris   { background: #F3F4F6; border: 1px solid #D1D5DB; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }
+    ul li { margin: 4px 0; }
+    .pie { text-align:center; color:#9CA3AF; font-size:10pt; margin-top:50px; padding-top:16px; border-top:1px solid #E5E7EB; }
+  </style>
+</head>
+<body>
+
+<h1>Sesión de Trabajo — 18 de junio de 2026</h1>
+<p style="color:#6B7280;">Proyecto: <strong>SENERGY</strong> &nbsp;|&nbsp; Directorio: <code>C:\Users\JOAQUIN\Desktop\SENERGY-17-10\SENERGY</code></p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>1. Qué hicimos hoy</h2>
+
+<h3>Parte A — Auditoría completa del proyecto</h3>
+<p>Se analizó todo el proyecto para evaluar si estaba listo para lanzarse. Se encontraron 7 problemas que bloqueaban el lanzamiento.</p>
+
+<h3>Parte B — Correcciones automáticas aplicadas al código</h3>
+
+<table>
+  <tr><th>Archivo</th><th>Qué se arregló</th></tr>
+  <tr>
+    <td><code>.gitignore</code></td>
+    <td>Se agregó <code>eas.json</code> para que las credenciales nunca lleguen al repositorio de git</td>
+  </tr>
+  <tr>
+    <td><code>eas.json</code></td>
+    <td>Se eliminaron todas las credenciales de Firebase y Cloudinary que estaban escritas en texto plano. Ahora el archivo solo contiene la estructura de builds, sin secretos</td>
+  </tr>
+  <tr>
+    <td><code>app.config.js</code></td>
+    <td>
+      — <code>userInterfaceStyle</code> cambiado de <code>'light'</code> a <code>'automatic'</code> (el dark mode del sistema ahora funciona)<br/>
+      — Se agregó <code>splash.image: './assets/splash.png'</code> (la pantalla de carga ya tiene imagen)<br/>
+      — Se eliminó el ID de prueba de Google como fallback del AdMob iOS
+    </td>
+  </tr>
+  <tr>
+    <td><code>screens/LegalScreen.js</code></td>
+    <td>
+      — Fechas <code>[PENDIENTE DE PERSONALIZAR]</code> reemplazadas por "17 de junio de 2026"<br/>
+      — Descripción de planes actualizada para que coincida con la realidad (antes decía "máximo 1 medidor y 20 lecturas" pero el plan real es ilimitado)
+    </td>
+  </tr>
+  <tr>
+    <td><code>screens/PricingScreen.js</code></td>
+    <td>
+      — Función mal nombrada <code>downgradeToPremium()</code> renombrada a <code>downgradeToFree()</code><br/>
+      — Eliminados todos los textos "esto es una demo" que aparecían al usuario<br/>
+      — Agregado botón "Restaurar compras anteriores" (lo exige Apple)
+    </td>
+  </tr>
+</table>
+
+<h3>Parte C — Integración de RevenueCat (sistema de pagos)</h3>
+
+<table>
+  <tr><th>Archivo</th><th>Qué se hizo</th></tr>
+  <tr>
+    <td><code>services/revenueCatService.js</code></td>
+    <td>Archivo nuevo. Contiene toda la lógica de pagos: inicializar RevenueCat, obtener productos, procesar la compra, restaurar compras. Usa importación dinámica para no crashear en Expo Go</td>
+  </tr>
+  <tr>
+    <td><code>App.js</code></td>
+    <td>Se agregó la inicialización de RevenueCat automáticamente cuando el usuario hace login</td>
+  </tr>
+  <tr>
+    <td><code>screens/PricingScreen.js</code></td>
+    <td>El botón "Activar Premium" ahora llama a Google Play de verdad. Si los productos no están configurados en Play Console todavía, muestra "Próximamente" en vez de crashear</td>
+  </tr>
+  <tr>
+    <td><code>package.json</code></td>
+    <td>Se agregó <code>react-native-purchases ^8.12.0</code> (SDK de RevenueCat)</td>
+  </tr>
+</table>
+
+<div class="caja-verde">
+  <strong>API Key de RevenueCat (Android):</strong> <code>goog_BYVxDSXgILzAqOCEwguwvZnwTAs</code><br/>
+  Esta clave ya está escrita en <code>services/revenueCatService.js</code> línea 4. Es una clave pública, es normal tenerla en el código.
+</div>
+
+<h3>Parte D — EAS Secrets configurados</h3>
+<p>Se cargaron las 9 credenciales del proyecto en los servidores seguros de Expo (EAS Secrets). Estas reemplazan el archivo <code>.env</code> para los builds de producción.</p>
+
+<table>
+  <tr><th>Nombre del Secret</th><th>Estado</th></tr>
+  <tr><td>FIREBASE_API_KEY</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>FIREBASE_AUTH_DOMAIN</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>FIREBASE_PROJECT_ID</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>FIREBASE_STORAGE_BUCKET</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>FIREBASE_MESSAGING_SENDER_ID</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>FIREBASE_APP_ID</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>FIREBASE_MEASUREMENT_ID</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>CLOUDINARY_CLOUD_NAME</td><td class="hecho">✓ Cargado</td></tr>
+  <tr><td>CLOUDINARY_UPLOAD_PRESET</td><td class="hecho">✓ Cargado</td></tr>
+</table>
+
+<h3>Parte E — Documento de instrucciones generado</h3>
+<p>Se creó el archivo <code>INSTRUCCIONES_LANZAMIENTO.html</code> con una guía paso a paso para todo lo que queda por hacer manualmente.</p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>2. Estado actual del proyecto</h2>
+
+<table>
+  <tr><th>Área</th><th>Estado</th><th>Notas</th></tr>
+  <tr><td>Código de la app</td><td class="hecho">✓ Listo</td><td>Sin bugs conocidos, sin textos de prueba visibles al usuario</td></tr>
+  <tr><td>Credenciales (EAS Secrets)</td><td class="hecho">✓ Listo</td><td>Las 9 credenciales cargadas en Expo</td></tr>
+  <tr><td>RevenueCat Android</td><td class="hecho">✓ Integrado</td><td>Falta configurar los productos en Google Play Console</td></tr>
+  <tr><td>Documentos legales</td><td class="hecho">✓ Listo</td><td>Fecha actualizada, planes correctos</td></tr>
+  <tr><td>AdMob Android</td><td class="hecho">✓ Listo</td><td>ID real ya configurado desde antes</td></tr>
+  <tr><td>AdMob iOS</td><td class="pending">⏳ Pendiente</td><td>No se pudo acceder a AdMob Console (error de login)</td></tr>
+  <tr><td>Google Play Console</td><td class="pending">⏳ Pendiente</td><td>Requiere pago de $25 USD para crear cuenta</td></tr>
+  <tr><td>Apple App Store</td><td class="pending">⏳ Pendiente</td><td>Requiere cuenta de Apple Developer ($99 USD/año)</td></tr>
+  <tr><td>Build de producción</td><td class="pending">⏳ Pendiente</td><td>No se puede buildear hasta tener Google Play Console</td></tr>
+  <tr><td>RevenueCat iOS</td><td class="pending">⏳ Pendiente</td><td>Dejado para cuando se tenga la cuenta de Apple</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>3. Lo que falta por hacer (en orden)</h2>
+
+<div class="caja-roja">
+  <strong>BLOQUEANTE PRINCIPAL:</strong> Sin cuenta de Google Play Developer ($25 USD) no se puede publicar en Android ni configurar los productos de pago. Todo lo demás está listo para Android.
+</div>
+
+<table>
+  <tr><th>#</th><th>Tarea</th><th>Costo</th><th>Quién</th></tr>
+  <tr>
+    <td>1</td>
+    <td>Crear cuenta Google Play Developer en <strong>play.google.com/console</strong></td>
+    <td>$25 USD (pago único, para siempre)</td>
+    <td>Joaquin</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Crear la app SENERGY en Google Play Console con package <code>com.energysaver.senergy</code></td>
+    <td>Gratis</td>
+    <td>Joaquin</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Crear la suscripción en Google Play Console:<br/>
+      ID: <code>senergy_premium_monthly</code> | Precio: $1.090 CLP/mes | Duración: 1 mes</td>
+    <td>Gratis</td>
+    <td>Joaquin</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Agregar ese producto en RevenueCat (Products → New Product) y crear Entitlement con ID <code>premium</code></td>
+    <td>Gratis</td>
+    <td>Joaquin</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Hacer el primer build de Android con el comando:<br/><code>eas build --platform android --profile production</code></td>
+    <td>Gratis (EAS incluye builds gratis)</td>
+    <td>Joaquin + Claude te guía</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Subir el build a Google Play Console y publicarlo en el track interno para pruebas</td>
+    <td>Gratis</td>
+    <td>Joaquin + Claude te guía</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>Resolver el error de acceso a AdMob Console (para crear el ID de iOS)</td>
+    <td>Gratis</td>
+    <td>Joaquin (soporte de Google)</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>Crear cuenta Apple Developer para publicar en iPhone</td>
+    <td>$99 USD/año</td>
+    <td>Joaquin (cuando sea posible)</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>4. Datos importantes del proyecto</h2>
+
+<table>
+  <tr><th>Dato</th><th>Valor</th></tr>
+  <tr><td>Firebase Project</td><td>senergy-46b1e</td></tr>
+  <tr><td>Bundle ID (Android + iOS)</td><td>com.energysaver.senergy</td></tr>
+  <tr><td>AdMob Android App ID</td><td>ca-app-pub-4937459209805273~6427921284</td></tr>
+  <tr><td>RevenueCat Android API Key</td><td>goog_BYVxDSXgILzAqOCEwguwvZnwTAs</td></tr>
+  <tr><td>RevenueCat iOS API Key</td><td>No creada todavía</td></tr>
+  <tr><td>ID producto Premium</td><td>senergy_premium_monthly</td></tr>
+  <tr><td>ID entitlement RevenueCat</td><td>premium</td></tr>
+  <tr><td>Precio Premium</td><td>$1.000 CLP/mes</td></tr>
+  <tr><td>Expo Project ID (EAS)</td><td>fa5824b5-c11e-4247-94df-de7764a011d3</td></tr>
+  <tr><td>Cloudinary Cloud Name</td><td>dinxnxpn4</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>5. Cómo continuar en la próxima sesión con Claude</h2>
+
+<div class="caja-gris">
+  <p>Cuando vuelvas a hablar con Claude, puedes empezar diciendo algo como:</p>
+  <p><em>"Revisa el archivo 2026-06-18_SESION.html del proyecto SENERGY y continuemos desde donde quedamos."</em></p>
+  <p>Claude leerá este archivo y sabrá exactamente qué se hizo y qué falta.</p>
+</div>
+
+<p>Según lo que hayas podido avanzar, dile una de estas cosas:</p>
+<ul>
+  <li><em>"Compré la cuenta de Google Play, ayúdame a crear la app y la suscripción"</em></li>
+  <li><em>"Ya configuré los productos en Google Play, hagamos el primer build"</em></li>
+  <li><em>"Quiero hacer el build de Android aunque no tenga la suscripción lista todavía"</em></li>
+</ul>
+
+<div class="pie">
+  Sesión documentada por Claude Code &nbsp;|&nbsp; SENERGY &nbsp;|&nbsp; 18 de junio de 2026
+</div>
+
+</body>
+</html>

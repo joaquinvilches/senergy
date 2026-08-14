@@ -25,6 +25,8 @@ import { Paywall } from '../components/Paywall';
 import { useStatsData } from '../hooks/useStatsData';
 import { usePeriodFilter } from '../hooks/usePeriodFilter';
 import { useInsights } from '../hooks/useInsights';
+import { AdBanner } from '../components/AdBanner';
+import { AD_UNIT_IDS } from '../services/adsService';
 
 // Componentes nuevos del rediseño
 import { PeriodSelector } from '../components/stats/PeriodSelector';
@@ -422,6 +424,9 @@ export const StatsScreen = () => {
         feature="exportación a Excel"
         reason="La exportación de datos está disponible solo en el plan Premium"
       />
+
+      {/* Banner publicitario (solo usuarios FREE) */}
+      <AdBanner adUnitId={AD_UNIT_IDS.BANNER_STATS} />
     </SafeAreaView>
   );
 };

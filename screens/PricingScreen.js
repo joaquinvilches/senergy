@@ -7,15 +7,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDarkMode } from '../utils/darkModeContext';
 import { SPACING, TYPOGRAPHY, RADIUS, ELEVATION } from '../constants/theme';
 import { PLAN_LIMITS, SUBSCRIPTION_PLANS } from '../constants/pricing';
-import { updateUserSubscription } from '../services/subscriptionService';
 import { getCurrentUser } from '../services/authService';
 import { useSubscription } from '../hooks/useSubscription';
+import { purchasePremium, restorePurchases } from '../services/revenueCatService';
 import Icon from '../components/Icon';
 import { logger } from '../utils/logger';
 
@@ -39,17 +40,17 @@ export const PricingScreen = ({ navigation, route }) => {
       return;
     }
 
-    // Si selecciona FREE (downgrade)
+    // Si selecciona FREE (downgrade): la suscripción real vive en Google Play,
+    // así que cancelar significa gestionarla ahí, no editar un campo local.
     if (planType === SUBSCRIPTION_PLANS.FREE) {
       Alert.alert(
         'Cancelar Premium',
-        '¿Estás seguro de que quieres volver al plan gratuito?',
+        'Para cancelar tu suscripción Premium debes hacerlo desde Google Play. Seguirás teniendo acceso Premium hasta el final del período ya pagado.',
         [
-          { text: 'No', style: 'cancel' },
+          { text: 'Cancelar', style: 'cancel' },
           {
-            text: 'Sí, cancelar',
-            style: 'destructive',
-            onPress: () => downgradeToPremium(),
+            text: 'Ir a Google Play',
+            onPress: () => openSubscriptionManagement(),
           },
         ]
       );
@@ -60,7 +61,7 @@ export const PricingScreen = ({ navigation, route }) => {
     setSelectedPlan(planType);
     Alert.alert(
       'Activar Premium',
-      `¿Deseas activar el plan Premium por $1.000 CLP/mes?\n\nEsto es una demo, se activará automáticamente sin pago real.`,
+      `¿Deseas activar el plan Premium por $2.200 CLP/mes?\n\nBeneficios:\n• Fotos de respaldo de tus lecturas\n• Sin anuncios\n• Soporte prioritario\n• Acceso anticipado a nuevas funciones`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -78,30 +79,42 @@ export const PricingScreen = ({ navigation, route }) => {
       const user = getCurrentUser();
       if (!user) throw new Error('No autenticado');
 
-      // Actualizar suscripción (1 mes)
-      const success = await updateUserSubscription(
-        user.uid,
-        SUBSCRIPTION_PLANS.PREMIUM,
-        1
-      );
+      let purchaseResult;
+      try {
+        purchaseResult = await purchasePremium();
+      } catch (rcError) {
+        if (rcError.message === 'NO_PRODUCTS') {
+          Alert.alert(
+            'Próximamente',
+            'El plan Premium estará disponible muy pronto en la tienda. ¡Gracias por tu interés en SENERGY!'
+          );
+          return;
+        }
+        if (rcError.message === 'REVENUECAT_NOT_READY') {
+          Alert.alert('Error', 'El sistema de pagos no está listo. Intenta cerrar y abrir la app.');
+          return;
+        }
+        throw rcError;
+      }
 
-      if (!success) throw new Error('Error al actualizar suscripción');
+      if (purchaseResult.cancelled) return;
+      if (!purchaseResult.success) throw new Error('Compra no completada');
 
-      logger.info('User upgraded to PREMIUM', { userId: user.uid });
-
-      // Refrescar estado
-      await refreshSubscription();
+      // La compra ya fue verificada por Google Play / RevenueCat. El estado
+      // en Firestore lo actualiza el webhook de RevenueCat (server-side) en
+      // segundos; hacemos un par de reintentos para reflejarlo en la UI antes
+      // de mostrar el mensaje de éxito.
+      logger.info('User completed purchase via RevenueCat', { userId: user.uid });
+      await waitForPremiumSync();
 
       Alert.alert(
-        '¡Bienvenido a Premium! 🎉',
-        'Ahora tienes acceso a todas las funciones premium:\n\n• Medidores ilimitados\n• Lecturas ilimitadas\n• Captura de fotos\n• Exportación a Excel',
+        '¡Bienvenido a Premium!',
+        '¡Gracias por apoyar a SENERGY!\n\nAhora disfrutas de:\n• Sin anuncios en ninguna pantalla\n• Soporte prioritario\n• Acceso anticipado a nuevas funciones',
         [
           {
             text: 'Continuar',
             onPress: () => {
-              if (onUpgrade) {
-                onUpgrade();
-              }
+              if (onUpgrade) onUpgrade();
               navigation.goBack();
             },
           },
@@ -109,39 +122,52 @@ export const PricingScreen = ({ navigation, route }) => {
       );
     } catch (error) {
       logger.error('Error upgrading to premium', { error });
-      Alert.alert('Error', 'No se pudo activar Premium. Intenta nuevamente.');
+      Alert.alert('Error', 'No se pudo completar la compra. Intenta nuevamente.');
     } finally {
       setLoading(false);
       setSelectedPlan(null);
     }
   };
 
-  const downgradeToPremium = async () => {
+  const handleRestorePurchases = async () => {
     try {
       setLoading(true);
-
       const user = getCurrentUser();
-      if (!user) throw new Error('No autenticado');
+      if (!user) return;
 
-      const success = await updateUserSubscription(
-        user.uid,
-        SUBSCRIPTION_PLANS.FREE
-      );
-
-      if (!success) throw new Error('Error al cancelar suscripción');
-
-      logger.info('User downgraded to FREE', { userId: user.uid });
-
-      await refreshSubscription();
-
-      Alert.alert('Premium Cancelado', 'Has vuelto al plan gratuito.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      const isPremium = await restorePurchases();
+      if (isPremium) {
+        // El webhook de RevenueCat sincroniza Firestore server-side.
+        await waitForPremiumSync();
+        Alert.alert('Compra restaurada', 'Tu suscripción Premium ha sido restaurada correctamente.');
+      } else {
+        Alert.alert('Sin compras', 'No se encontraron compras anteriores para restaurar.');
+      }
     } catch (error) {
-      logger.error('Error downgrading to free', { error });
-      Alert.alert('Error', 'No se pudo cancelar. Intenta nuevamente.');
+      logger.error('Error restoring purchases', { error });
+      Alert.alert('Error', 'No se pudo restaurar la compra. Intenta nuevamente.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Espera breve para que el webhook de RevenueCat sincronice Firestore
+  // antes de refrescar la UI (evita mostrar "FREE" por un instante tras pagar).
+  const waitForPremiumSync = async () => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const current = await refreshSubscription();
+      if (current === SUBSCRIPTION_PLANS.PREMIUM) return;
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  };
+
+  const openSubscriptionManagement = async () => {
+    const url = 'https://play.google.com/store/account/subscriptions?sku=senergy_premium_monthly&package=com.energysaver.senergy';
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      logger.error('Error opening subscription management', { error });
+      Alert.alert('Error', 'No se pudo abrir Google Play. Ábrelo manualmente desde la app de Play Store.');
     }
   };
 
@@ -274,8 +300,17 @@ export const PricingScreen = ({ navigation, route }) => {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.TEXT_LIGHT }]}>
-            💡 Esto es una demo. En producción se integraría con pasarela de pagos real.
+            Puedes cancelar tu suscripción Premium en cualquier momento desde esta pantalla.
           </Text>
+          <TouchableOpacity
+            onPress={handleRestorePurchases}
+            disabled={loading}
+            style={{ marginTop: SPACING.md }}
+          >
+            <Text style={[styles.footerText, { color: colors.PRIMARY, textDecorationLine: 'underline' }]}>
+              Restaurar compras anteriores
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

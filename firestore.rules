@@ -12,6 +12,14 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Subscription fields are only ever written by the RevenueCat webhook
+    // Cloud Function (Admin SDK, bypasses these rules). Clients must never
+    // be able to set themselves to PREMIUM directly.
+    function subscriptionFieldsUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['subscription', 'subscriptionExpiry', 'subscriptionStartDate']);
+    }
+
     // Helper function to validate reading data
     function isValidReading(reading) {
       return reading.keys().hasAll(['value', 'consumption', 'cost', 'costPerKwh', 'date'])
@@ -51,13 +59,12 @@ service cloud.firestore {
         && request.resource.data.uid == userId
         && request.resource.data.createdAt is timestamp
         && (!('email' in request.resource.data) || request.resource.data.email is string)
-        && (!('subscription' in request.resource.data) || request.resource.data.subscription in ['FREE', 'PREMIUM'])
-        && (!('subscriptionExpiry' in request.resource.data) || request.resource.data.subscriptionExpiry == null || request.resource.data.subscriptionExpiry is timestamp)
-        && (!('subscriptionStartDate' in request.resource.data) || request.resource.data.subscriptionStartDate == null || request.resource.data.subscriptionStartDate is timestamp);
-      allow update: if isOwner(userId)
-        && (!('subscription' in request.resource.data) || request.resource.data.subscription in ['FREE', 'PREMIUM'])
-        && (!('subscriptionExpiry' in request.resource.data) || request.resource.data.subscriptionExpiry == null || request.resource.data.subscriptionExpiry is timestamp)
-        && (!('subscriptionStartDate' in request.resource.data) || request.resource.data.subscriptionStartDate == null || request.resource.data.subscriptionStartDate is timestamp);
+        // New accounts must always start on FREE; only the RevenueCat webhook
+        // (Admin SDK) can ever grant PREMIUM.
+        && (!('subscription' in request.resource.data) || request.resource.data.subscription == 'FREE')
+        && (!('subscriptionExpiry' in request.resource.data) || request.resource.data.subscriptionExpiry == null)
+        && (!('subscriptionStartDate' in request.resource.data) || request.resource.data.subscriptionStartDate == null);
+      allow update: if isOwner(userId) && subscriptionFieldsUnchanged();
       allow delete: if isOwner(userId);
 
       // Meters subcollection - users can only access their own meters

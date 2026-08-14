@@ -1,7 +1,7 @@
 // Sistema de Diseño SENERGY - Minimalista Profesional
 
 // Paleta de colores mejorada con gradientes
-const COLORS = {
+export const COLORS = {
   // Paleta verde mejorada (minimalista pero vibrante)
   primary: {
     50: '#ECFDF5',   // Muy claro (backgrounds sutiles)
@@ -59,7 +59,7 @@ const COLORS = {
 };
 
 // Tipografía (sistema claro y minimalista)
-const TYPOGRAPHY = {
+export const TYPOGRAPHY = {
   fontFamily: {
     regular: 'System',
     medium: 'System',
@@ -95,7 +95,7 @@ const TYPOGRAPHY = {
 };
 
 // Espaciado (escala 4px, minimalista generoso)
-const SPACING = {
+export const SPACING = {
   xs: 4,
   sm: 8,
   md: 12,
@@ -110,7 +110,7 @@ const SPACING = {
 };
 
 // Border radius (minimalista, no muy redondeado)
-const RADIUS = {
+export const RADIUS = {
   none: 0,
   sm: 4,
   md: 8,
@@ -122,7 +122,7 @@ const RADIUS = {
 };
 
 // Elevación/sombras (sutiles pero visibles)
-const ELEVATION = {
+export const ELEVATION = {
   none: {
     shadowColor: 'transparent',
     shadowOffset: { width: 0, height: 0 },
@@ -173,7 +173,7 @@ const ELEVATION = {
 };
 
 // Tamaños de iconos estándar
-const ICON_SIZES = {
+export const ICON_SIZES = {
   xs: 12,
   sm: 16,
   md: 20,
@@ -184,7 +184,7 @@ const ICON_SIZES = {
 };
 
 // Breakpoints para responsive
-const BREAKPOINTS = {
+export const BREAKPOINTS = {
   sm: 576,
   md: 768,
   lg: 1024,
@@ -192,7 +192,7 @@ const BREAKPOINTS = {
 };
 
 // Opacidades estándar
-const OPACITY = {
+export const OPACITY = {
   disabled: 0.5,
   hover: 0.8,
   pressed: 0.6,
@@ -201,14 +201,15 @@ const OPACITY = {
 };
 
 // Duraciones de animación
-const ANIMATION_DURATION = {
+export const ANIMATION_DURATION = {
   fast: 100,
   normal: 200,
   slow: 300,
   slower: 400,
 };
 
-export {
+// Default export
+export default {
   COLORS,
   TYPOGRAPHY,
   SPACING,

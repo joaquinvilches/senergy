@@ -45,3 +45,24 @@ yarn-error.*
 
 # Firebase Admin SDK
 serviceAccountKey.json
+google-play-key.json
+
+# Cloud Functions env
+functions/.env
+
+# EAS
+google-services.json
+GoogleService-Info.plist
+# eas.json puede contener secrets — usar EAS Secrets en su lugar
+eas.json
+
+# Archivos de sesión y boletas (no pertenecen al repo)
+SESION_*.md
+ESTADO_*.md
+ERRORES_*.md
+GUIA_*.md
+CHECKLIST_*.md
+INFORME_*.html
+NUEVO_*.md
+*.pdf
+*.txt

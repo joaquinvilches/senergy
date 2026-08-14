@@ -34,7 +34,7 @@ export const useSubscription = () => {
       if (!user) {
         setSubscription(SUBSCRIPTION_PLANS.FREE);
         setLoading(false);
-        return;
+        return SUBSCRIPTION_PLANS.FREE;
       }
 
       const subData = await getUserSubscription(user.uid);
@@ -48,9 +48,12 @@ export const useSubscription = () => {
         userId: user.uid,
         subscription: subData.subscription,
       });
+
+      return subData.subscription;
     } catch (error) {
       logger.error('Error loading subscription', { error });
       setSubscription(SUBSCRIPTION_PLANS.FREE);
+      return SUBSCRIPTION_PLANS.FREE;
     } finally {
       setLoading(false);
     }
@@ -105,7 +108,7 @@ export const useSubscription = () => {
    * Refresca la suscripción (útil después de comprar)
    */
   const refreshSubscription = useCallback(async () => {
-    await loadSubscription();
+    return await loadSubscription();
   }, [loadSubscription]);
 
   return {
