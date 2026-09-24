@@ -31,7 +31,7 @@ export default {
     splash: {
       image: './assets/splash.png',
       resizeMode: 'contain',
-      backgroundColor: '#F5F9F7',
+      backgroundColor: '#F7FAF3',
     },
     assetBundlePatterns: ['**/*'],
     ios: {
@@ -47,7 +47,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#1B7D4A',
+        backgroundColor: '#F7FAF3',
       },
       package: 'com.energysaver.senergy',
       permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'],

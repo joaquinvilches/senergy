@@ -279,8 +279,8 @@ export const RegisterMeterScreen = ({ navigation }) => {
                 Tarifa actual: $
                 {selectedCompanyKey && ELECTRICITY_COMPANIES[selectedCompanyKey]
                   ? formatChileanNumber(ELECTRICITY_COMPANIES[selectedCompanyKey].costPerKwh)
-                  : '220'}
-                 por cada kWh consumido
+                  : '220'}{' '}
+                por cada kWh consumido
               </Text>
             </View>
 
