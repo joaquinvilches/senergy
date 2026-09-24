@@ -35,7 +35,7 @@ SENERGY es gratis para siempre en sus funciones esenciales: medidores ilimitados
 
 Nota: SENERGY entrega estimaciones de consumo y costo basadas en las lecturas que ingresas. Siempre verifica el valor oficial en tu factura eléctrica.
 
-¿Dudas o sugerencias? Escríbenos a contacto@senergy.cl
+¿Dudas o sugerencias? Escríbenos a joaquinpersonal4731@gmail.com
 ```
 
 ## Categoría sugerida
