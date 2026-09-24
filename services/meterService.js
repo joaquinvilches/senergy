@@ -11,6 +11,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { deleteMeterPhoto } from './imageService';
@@ -70,9 +71,32 @@ export const updateMeter = async (userId, meterId, updates) => {
 
 /**
  * Eliminar un medidor
+ * Firestore no borra subcolecciones en cascada, así que primero se eliminan
+ * las lecturas (y sus fotos) para no dejar datos huérfanos.
  */
 export const deleteMeter = async (userId, meterId) => {
   try {
+    const readingsRef = collection(db, 'users', userId, 'meters', meterId, 'readings');
+    const readingsSnap = await getDocs(readingsRef);
+
+    for (const readingDoc of readingsSnap.docs) {
+      const { photoURL } = readingDoc.data();
+      if (photoURL) {
+        try {
+          await deleteMeterPhoto(photoURL);
+        } catch (photoError) {
+          console.error('Error deleting photo, continuing with meter deletion:', photoError);
+        }
+      }
+    }
+
+    // writeBatch admite hasta 500 operaciones por commit
+    for (let i = 0; i < readingsSnap.docs.length; i += 500) {
+      const batch = writeBatch(db);
+      readingsSnap.docs.slice(i, i + 500).forEach((readingDoc) => batch.delete(readingDoc.ref));
+      await batch.commit();
+    }
+
     const meterRef = doc(db, 'users', userId, 'meters', meterId);
     await deleteDoc(meterRef);
   } catch (error) {
