@@ -82,7 +82,7 @@ El Usuario se compromete a:
 
 ### 5.4 Política de Reembolsos
 - No se ofrecen reembolsos para suscripciones mensuales ya pagadas
-- En caso de problemas técnicos graves, puede solicitar un reembolso a joaquinpersonal4731@gmail.com
+- En caso de problemas técnicos graves, puede solicitar un reembolso a senergycontacto22@gmail.com
 - Los reembolsos se evaluarán caso por caso
 
 ## 6. Propiedad Intelectual
@@ -178,7 +178,7 @@ Si alguna disposición de estos Términos se considera inválida o inaplicable, 
 
 Si tiene preguntas sobre estos Términos, puede contactarnos en:
 
-- **Email:** joaquinpersonal4731@gmail.com
+- **Email:** senergycontacto22@gmail.com
 - **Teléfono:** +56 9 9773 9765
 - **Dirección:** Villa Colonial Pasaje La Monarquía #573, El Monte, Chile
 

@@ -239,7 +239,13 @@ export const RegisterMeterScreen = ({ navigation }) => {
                   itemStyle={{ color: colors.TEXT_DARK }}
                 >
                   {Object.values(REGIONS).map((region) => (
-                    <Picker.Item key={region} label={region} value={region} color={colors.TEXT_DARK} />
+                    <Picker.Item
+                      key={region}
+                      label={region}
+                      value={region}
+                      color={colors.TEXT_DARK}
+                      style={{ backgroundColor: colors.WHITE }}
+                    />
                   ))}
                 </Picker>
               </View>
@@ -271,6 +277,7 @@ export const RegisterMeterScreen = ({ navigation }) => {
                       label={company.name}
                       value={company.key}
                       color={colors.TEXT_DARK}
+                      style={{ backgroundColor: colors.WHITE }}
                     />
                   ))}
                 </Picker>

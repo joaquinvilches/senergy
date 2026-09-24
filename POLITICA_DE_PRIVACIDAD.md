@@ -28,7 +28,7 @@ Esta política cumple con:
 - Nombre: Joaquin Alberto Vilches Montenegro
 - RUT: 20.712.316-1
 - Dirección: Villa Colonial Pasaje La Monarquía #573, El Monte, Chile
-- Email de contacto: joaquinpersonal4731@gmail.com
+- Email de contacto: senergycontacto22@gmail.com
 - Teléfono: +56 9 9773 9765
 
 ## 3. Datos Personales que Recopilamos
@@ -283,7 +283,7 @@ Usted tiene los siguientes derechos sobre sus datos personales:
 ### 9.1 Derecho de Acceso
 Puede solicitar una copia de todos los datos personales que tenemos sobre usted.
 
-**Cómo ejercerlo:** Envíe un email a joaquinpersonal4731@gmail.com con el asunto "Solicitud de Acceso a Datos"
+**Cómo ejercerlo:** Envíe un email a senergycontacto22@gmail.com con el asunto "Solicitud de Acceso a Datos"
 
 ### 9.2 Derecho de Rectificación
 Puede corregir datos inexactos o incompletos.
@@ -302,7 +302,7 @@ Puede solicitar la eliminación de sus datos.
 ### 9.4 Derecho de Oposición
 Puede oponerse al procesamiento de sus datos para ciertos propósitos (ej. marketing).
 
-**Cómo ejercerlo:** Contactarnos a joaquinpersonal4731@gmail.com
+**Cómo ejercerlo:** Contactarnos a senergycontacto22@gmail.com
 
 ### 9.5 Derecho de Portabilidad
 Puede solicitar sus datos en un formato estructurado y legible por máquina.
@@ -312,7 +312,7 @@ Puede solicitar sus datos en un formato estructurado y legible por máquina.
 ### 9.6 Derecho de Limitación del Tratamiento
 Puede solicitar limitar el procesamiento de sus datos en ciertas circunstancias.
 
-**Cómo ejercerlo:** Contactarnos a joaquinpersonal4731@gmail.com
+**Cómo ejercerlo:** Contactarnos a senergycontacto22@gmail.com
 
 ### 9.7 Derecho a Revocar Consentimiento
 Puede revocar su consentimiento en cualquier momento.
@@ -342,7 +342,7 @@ SENERGY está destinada a personas mayores de **18 años**.
 
 Si descubrimos que un menor ha proporcionado datos personales, eliminaremos su cuenta inmediatamente.
 
-Si usted es padre/madre/tutor y cree que su hijo menor ha creado una cuenta, contacte a joaquinpersonal4731@gmail.com.
+Si usted es padre/madre/tutor y cree que su hijo menor ha creado una cuenta, contacte a senergycontacto22@gmail.com.
 
 ## 11. Cookies y Tecnologías de Rastreo
 
@@ -388,7 +388,7 @@ Podemos actualizar esta Política de Privacidad periódicamente.
 Si tiene preguntas sobre esta Política de Privacidad o sobre cómo manejamos sus datos, contáctenos:
 
 **Responsable de Protección de Datos:**
-- Email: joaquinpersonal4731@gmail.com
+- Email: senergycontacto22@gmail.com
 - Teléfono: +56 9 9773 9765
 - Dirección: Villa Colonial Pasaje La Monarquía #573, El Monte, Chile
 
@@ -435,7 +435,7 @@ Este resumen es solo para su conveniencia. El documento legal completo es el tex
 🛡️ Firebase Security Rules
 
 ### Contacto:
-📩 joaquinpersonal4731@gmail.com
+📩 senergycontacto22@gmail.com
 
 ---
 

@@ -103,7 +103,7 @@ export const LegalScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={[styles.contactButton, { backgroundColor: colors.PRIMARY }]}
-            onPress={() => openExternalLink('mailto:contacto@senergy.cl')}
+            onPress={() => openExternalLink('mailto:senergycontacto22@gmail.com')}
           >
             <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
             <Text style={styles.contactButtonText}>Contactar Soporte</Text>
